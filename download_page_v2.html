@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Catch the Falling Stars</title>
+<style>
+  body{margin:0;overflow:hidden;font-family:sans-serif;background:#0d0d0d;color:#fff;}
+  canvas{display:block;background:#111;}
+  #score{position:absolute;top:10px;left:50%;transform:translateX(-50%);font-size:24px;}
+</style>
+</head>
+<body>
+<div id="score">Score: 0</div>
+<canvas id="gameCanvas"></canvas>
+<script>
+const canvas = document.getElementById('gameCanvas');
+const ctx = canvas.getContext('2d');
+canvas.width = window.innerWidth;
+canvas.height = window.innerHeight;
+
+let score = 0;
+const player = {x: canvas.width/2, y: canvas.height-50, width: 80, height: 20, color:'#0f0'};
+const stars = [];
+const starCount = 5;
+for(let i=0;i<starCount;i++){
+  stars.push({x:Math.random()*canvas.width, y:Math.random()*-canvas.height, radius:20, color:'#ff0', speed:2+Math.random()*3});
+}
+
+function drawPlayer(){
+  ctx.fillStyle = player.color;
+  ctx.fillRect(player.x, player.y, player.width, player.height);
+}
+
+function drawStars(){
+  for(const s of stars){
+    ctx.beginPath();
+    ctx.arc(s.x,s.y,s.radius,0,Math.PI*2);
+    ctx.fillStyle = s.color;
+    ctx.fill();
+    ctx.closePath();
+  }
+}
+
+function updateStars(){
+  for(const s of stars){
+    s.y += s.speed;
+    if(s.y > canvas.height){
+      s.y = -20;
+      s.x = Math.random()*canvas.width;
+    }
+    // collision
+    if(s.y + s.radius > player.y && s.y - s.radius < player.y + player.height && s.x > player.x && s.x < player.x + player.width){
+      score++;
+      s.y = -20;
+      s.x = Math.random()*canvas.width;
+      document.getElementById('score').innerText = 'Score: ' + score;
+    }
+  }
+}
+
+function gameLoop(){
+  ctx.clearRect(0,0,canvas.width,canvas.height);
+  drawPlayer();
+  drawStars();
+  updateStars();
+  requestAnimationFrame(gameLoop);
+}
+
+document.addEventListener('mousemove', e => {player.x = e.clientX - player.width/2;});
+document.addEventListener('touchmove', e => {player.x = e.touches[0].clientX - player.width/2; e.preventDefault();}, {passive:false});
+
+gameLoop();
+</script>
+</body>
+</html>
