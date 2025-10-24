@@ -3,190 +3,158 @@
 <head>
 <meta charset="utf-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1"/>
-<title>SK Prank Patrol</title>
+<title>SK Road Guard (Simple)</title>
 <style>
-  :root{--bg:#0b1220;--panel:#0f1724;--accent:#00ff9c;--bad:#ff6b6b;}
-  html,body{height:100%;margin:0;background:linear-gradient(180deg,#071020,#02030a);font-family:Inter,system-ui,Segoe UI,Arial,sans-serif;color:#e6fffa;overflow:hidden}
-  #ui{position:absolute;left:12px;top:12px;z-index:80;}
-  #score{background:rgba(255,255,255,0.03);padding:8px 12px;border-radius:10px;font-weight:800}
-  #hint{position:absolute;left:12px;bottom:12px;background:rgba(0,0,0,0.25);padding:8px 12px;border-radius:10px;font-size:13px}
+  html,body{margin:0;height:100%;background:linear-gradient(#081226,#02030a);font-family:system-ui,Arial,sans-serif;color:#fff;overflow:hidden}
   canvas{display:block}
-  /* small button for restart */
-  .btn{position:absolute;right:12px;top:12px;padding:8px 12px;background:#007bff;border-radius:10px;color:#fff;border:none;font-weight:800;z-index:80}
+  #ui{position:fixed;left:12px;top:12px;z-index:10}
+  #score{background:rgba(255,255,255,0.03);padding:8px 12px;border-radius:10px;font-weight:800}
+  #hint{position:fixed;left:12px;bottom:12px;background:rgba(0,0,0,0.25);padding:8px 12px;border-radius:10px;font-size:13px}
+  button{position:fixed;right:12px;top:12px;padding:8px 12px;border-radius:8px;border:none;background:#007bff;color:#fff;font-weight:700}
 </style>
 </head>
 <body>
 <div id="ui"><div id="score">Score: 0</div></div>
-<button class="btn" id="restart">Restart</button>
-<div id="hint">Tap SK to prank! (Touch or Click)</div>
-<canvas id="c"></canvas>
+<button id="restart">Restart</button>
+<div id="hint">Tap/Click on <strong>SK</strong> when a teacher is close to hit. (Touch & Mouse supported)</div>
+<canvas id="game"></canvas>
 
 <script>
-// ====== GAME: SK Prank Patrol ======
-// Single-file, mobile-friendly canvas game.
-// Safe, cartoonish "prank" effect (confetti + puff) — no graphic violence.
-
-// Canvas setup
-const canvas = document.getElementById('c');
+const canvas = document.getElementById('game');
 const ctx = canvas.getContext('2d');
 function resize(){ canvas.width = innerWidth; canvas.height = innerHeight; }
-addEventListener('resize', resize, false);
-resize();
+addEventListener('resize', resize); resize();
 
-// UI references
 const scoreEl = document.getElementById('score');
 const restartBtn = document.getElementById('restart');
-
 let score = 0;
-function setScore(v){ score = v; scoreEl.innerText = 'Score: '+score; }
+function setScore(v){ score = v; scoreEl.innerText = 'Score: ' + score; }
 
-// Player SK
+//// Game entities
+// SK stands at left end, center of road
+const roadY = () => canvas.height * 0.65;
 const SK = {
-  x: () => canvas.width/2,
-  y: () => canvas.height - 110,
-  w: 140,
-  h: 46,
-  swingTime: 0, // animation timer
-  swingDuration: 300 // ms
+  x: 110, // fixed near left
+  y: () => roadY() - 10,
+  w: 110,
+  h: 48,
+  swingAt: 0,
+  swingDur: 300 // ms
 };
 
-// NPC list
-let npcs = []; // {x,y,w,h,vx,label,alive,spawnedAt}
-const npcLabels = ['TEACHER','MADAM','SIR','PRINCIPAL']; // cartoon tags
+// enemies: simple array; each with x,y,w,h,vx,label,alive,t
+let enemies = [];
 
-// spawn an NPC (from left or right)
-function spawnNPC(){
-  const fromLeft = Math.random() < 0.5;
-  const y = Math.random()*(canvas.height*0.55) + 80;
-  const laneX = fromLeft ? -80 : canvas.width + 80;
-  const vx = (fromLeft ? 1 : -1) * (1.2 + Math.random()*1.6 + Math.min(score/30, 1.8));
-  const label = npcLabels[Math.floor(Math.random()*npcLabels.length)];
-  const w = 120, h = 46;
-  npcs.push({x: laneX, y, w, h, vx, label, alive:true, t:0});
+// spawn enemies from right edge moving left
+function spawnEnemy(){
+  const x = canvas.width + 60;
+  const y = roadY() - (Math.random()*40 - 10); // around road line
+  const w = 110, h = 46;
+  const vx = - (1.2 + Math.random()*0.8 + Math.min(score/30, 1.5)); // speed increases slowly with score
+  const labels = ['TEACHER','MADAM','SIR','MAM'];
+  const label = labels[Math.floor(Math.random()*labels.length)];
+  enemies.push({x,y,w,h,vx,label,alive:true,t:0});
 }
 
-// initial spawn
-for(let i=0;i<3;i++) spawnNPC();
+// spawn initial enemies
+for(let i=0;i<3;i++){
+  // stagger spawn by pushing further right
+  enemies.push({x: canvas.width + 60 + i*220, y: roadY() - (Math.random()*40 - 10), w:110,h:46, vx: -1.6, label: ['TEACHER','MADAM','SIR'][i%3], alive:true, t:0});
+}
 
-// touch/mouse control: tap on SK to swing (also anywhere on SK area)
+// input: detect tap/click on SK
 function pointInSK(px,py){
-  const sx = SK.x() - SK.w/2, sy = SK.y() - SK.h/2;
+  const sx = SK.x - SK.w/2;
+  const sy = SK.y() - SK.h/2;
   return px >= sx && px <= sx + SK.w && py >= sy && py <= sy + SK.h;
 }
 
-// simple sound helper (beep)
-function beep(f=880, t=0.08){
+canvas.addEventListener('click', (e)=>{
+  const r = canvas.getBoundingClientRect();
+  const px = e.clientX - r.left, py = e.clientY - r.top;
+  if(pointInSK(px,py)) doSwing();
+});
+canvas.addEventListener('touchstart', (ev)=>{
+  const t = ev.touches[0];
+  const r = canvas.getBoundingClientRect();
+  const px = t.clientX - r.left, py = t.clientY - r.top;
+  if(pointInSK(px,py)) doSwing();
+}, {passive:false});
+
+// swing logic: if enemies within range (distance < rangeX and vertical close) then "prank" them
+function doSwing(){
+  const now = performance.now();
+  if(SK.swingAt && now - SK.swingAt < SK.swingDur) return; // avoid spam
+  SK.swingAt = now;
+  // small click sound
   try{
     const A = new (window.AudioContext || window.webkitAudioContext)();
-    const o = A.createOscillator(); const g = A.createGain();
-    o.type='sine'; o.frequency.value = f; o.connect(g); g.connect(A.destination);
-    o.start(); g.gain.exponentialRampToValueAtTime(0.00001, A.currentTime + t);
+    const o = A.createOscillator(), g = A.createGain();
+    o.type='sine'; o.frequency.value = 880; o.connect(g); g.connect(A.destination);
+    o.start(); g.gain.exponentialRampToValueAtTime(0.00001, A.currentTime + 0.06);
   }catch(e){}
+  // range check - enemies whose x is < SK.x + range and > SK.x
+  const range = 170;
+  for(let i=0;i<enemies.length;i++){
+    const en = enemies[i];
+    if(!en.alive) continue;
+    const dx = en.x - SK.x;
+    const dy = Math.abs(en.y - SK.y());
+    if(dx < range && dx > -40 && dy < 60){
+      // hit: mark pranked (non-violent vanish)
+      en.alive = false;
+      en.t = 0;
+      spawnConfetti(en.x, en.y, 20);
+      spawnPuff(en.x, en.y);
+      setScore(score + 1);
+    }
+  }
 }
 
-// confetti pieces
-let confetti = []; // {x,y,vx,vy,color,size,life}
+// confetti & puff particles
+let confetti = [], puffs = [];
 function spawnConfetti(x,y,amount=18){
   const cols = ['#ffce00','#ff4d4d','#00ff9c','#00bfff','#d400ff'];
   for(let i=0;i<amount;i++){
     confetti.push({
       x, y,
       vx: (Math.random()-0.5)*6,
-      vy: -3 - Math.random()*4,
+      vy: -3 - Math.random()*3,
       color: cols[Math.floor(Math.random()*cols.length)],
-      size: 4+Math.random()*8,
-      life: 800 + Math.random()*1000,
+      size: 4+Math.random()*7,
+      life: 700 + Math.random()*900,
       t:0
     });
   }
 }
-
-// puff particle
-let puffs = []; // {x,y,r,alpha,life,t}
 function spawnPuff(x,y){
-  puffs.push({x,y,r:18+Math.random()*18, alpha:1, life:500, t:0});
+  puffs.push({x,y,r:18+Math.random()*18,t:0,life:500});
 }
 
-// handle swing (prank)
-function doSwing(){
-  // prevent immediate spam: use swingTime
-  const now = performance.now();
-  if(SK.swingTime && now - SK.swingTime < SK.swingDuration) return;
-  SK.swingTime = now;
-  beep(880,0.06); // small sound
-  // check NPCs in range arc: distance and angle forward
-  const sx = SK.x(), sy = SK.y() - 6;
-  const range = 160;
-  for(let i=0;i<npcs.length;i++){
-    const n = npcs[i];
-    if(!n.alive) continue;
-    const dx = n.x - sx;
-    const dy = n.y - sy;
-    const dist = Math.hypot(dx,dy);
-    if(dist < range){
-      // also check vertical roughly in front (dy < 100)
-      // mark as "pranked" — nonviolent vanish with confetti
-      n.alive = false;
-      n.deadAt = performance.now();
-      // confetti and puff
-      spawnConfetti(n.x, n.y, 24);
-      spawnPuff(n.x, n.y);
-      // funny label change (pranked sticker)
-      n.prankedLabel = 'PRANKED!';
-      setScore(score + 1);
-      // small extra beep
-      setTimeout(()=>beep(1200,0.04), 60);
-    }
-  }
-}
-
-// input listeners
-canvas.addEventListener('click', (e)=>{
-  const rect = canvas.getBoundingClientRect();
-  const px = e.clientX - rect.left;
-  const py = e.clientY - rect.top;
-  // if clicked on SK area, swing; else, move pointer
-  if(pointInSK(px,py)) doSwing();
-});
-canvas.addEventListener('touchstart', (ev)=>{
-  const t = ev.touches[0];
-  const rect = canvas.getBoundingClientRect();
-  const px = t.clientX - rect.left, py = t.clientY - rect.top;
-  if(pointInSK(px,py)) doSwing();
-}, {passive:false});
-
-// restart
-restartBtn.addEventListener('click', ()=>{
-  npcs = []; confetti = []; puffs = []; setScore(0); for(let i=0;i<3;i++) spawnNPC();
-});
-
-// main loop
+// update loop
 let last = performance.now();
-function step(now){
-  const dt = now - last; last = now;
-  update(dt);
-  render();
-  requestAnimationFrame(step);
-}
-requestAnimationFrame(step);
-
-// update logic
 function update(dt){
-  // move npcs
-  for(const n of npcs){
-    if(n.alive){
-      n.x += n.vx * (dt/16);
-      n.t += dt;
+  // move enemies straight left
+  for(let i=enemies.length-1;i>=0;i--){
+    const en = enemies[i];
+    if(en.alive){
+      en.x += en.vx * (dt/16);
+      en.t += dt;
+      // if reach SK (go past), penalize a little and remove
+      if(en.x < SK.x - 40){
+        // they passed SK -> remove and spawn another
+        enemies.splice(i,1);
+        spawnEnemy();
+        // optional penalty
+        setScore(Math.max(0, score - 0));
+      }
     } else {
-      // dead: float and slowly fade
-      n.y -= 0.3 * (dt/16);
-      n.t += dt;
-      // remove after some time
-      if(n.t > 1500 && Math.random() < 0.02){
-        // remove and spawn replacement
-        const idx = npcs.indexOf(n);
-        if(idx>=0) npcs.splice(idx,1);
-        spawnNPC();
+      // dead: float up a bit and fade then remove
+      en.y -= 0.4 * (dt/16);
+      en.t += dt;
+      if(en.t > 1200){
+        enemies.splice(i,1);
+        spawnEnemy();
       }
     }
   }
@@ -194,109 +162,67 @@ function update(dt){
   // update confetti
   for(let i=confetti.length-1;i>=0;i--){
     const c = confetti[i];
-    c.vy += 0.12 * (dt/16); // gravity
+    c.vy += 0.12 * (dt/16);
     c.x += c.vx * (dt/16);
     c.y += c.vy * (dt/16);
     c.t += dt;
     if(c.t > c.life) confetti.splice(i,1);
   }
-
   // update puffs
   for(let i=puffs.length-1;i>=0;i--){
     const p = puffs[i];
     p.t += dt;
-    p.alpha = Math.max(0, 1 - p.t / p.life);
     if(p.t > p.life) puffs.splice(i,1);
   }
 
-  // occasionally spawn new NPC if few
-  if(npcs.length < 4 && Math.random() < 0.02) spawnNPC();
+  // ensure at least 3 enemies queued
+  if(enemies.length < 3 && Math.random() < 0.03) spawnEnemy();
 }
 
 // render
 function render(){
   ctx.clearRect(0,0,canvas.width,canvas.height);
 
-  // background road
-  const roadY = canvas.height * 0.65;
-  ctx.fillStyle = '#0b1220';
+  // background (road)
+  const ry = roadY();
+  ctx.fillStyle = '#071226';
   ctx.fillRect(0,0,canvas.width,canvas.height);
-  // road stripe
-  ctx.fillStyle = '#11141b';
-  ctx.fillRect(0,roadY,canvas.width, canvas.height - roadY);
+  // road strip
+  ctx.fillStyle = '#0e1720';
+  ctx.fillRect(0, ry, canvas.width, canvas.height - ry);
   ctx.fillStyle = '#ffd166';
-  for(let i=0;i<canvas.width;i+=60){
-    ctx.fillRect(i, roadY + 44, 36, 6);
-  }
+  for(let i=0;i<canvas.width;i+=60) ctx.fillRect(i, ry + 44, 36, 6);
 
   // draw confetti
   for(const c of confetti){
     ctx.fillStyle = c.color;
     ctx.fillRect(c.x, c.y, c.size, c.size);
   }
-
   // draw puffs
   for(const p of puffs){
     ctx.beginPath();
-    ctx.fillStyle = 'rgba(255,255,255,'+ (0.6*p.alpha) +')';
-    ctx.arc(p.x, p.y, p.r * (0.5 + p.t/ p.life), 0, Math.PI*2);
+    ctx.fillStyle = 'rgba(255,255,255,' + (0.65*(1 - p.t/p.life)) + ')';
+    ctx.arc(p.x, p.y, p.r * (0.5 + p.t/p.life), 0, Math.PI*2);
     ctx.fill();
   }
 
-  // draw NPCs
-  for(const n of npcs){
+  // draw enemies (moving right->left)
+  for(const en of enemies){
     ctx.save();
-    // body box
-    ctx.fillStyle = n.alive ? '#ff6b6b' : '#8b8b8b';
-    ctx.fillRect(n.x - n.w/2, n.y - n.h/2, n.w, n.h);
-    // face (circle)
-    ctx.beginPath();
-    ctx.fillStyle = '#fff';
-    ctx.arc(n.x - n.w/2 + 20, n.y - 6, 10, 0, Math.PI*2);
-    ctx.fill();
-    // label
+    ctx.translate(en.x, en.y);
+    // body
+    ctx.fillStyle = en.alive ? '#ff6b6b' : '#8b8b8b';
+    ctx.fillRect(-en.w/2, -en.h/2, en.w, en.h);
+    // face circle
+    ctx.beginPath(); ctx.fillStyle = '#fff'; ctx.arc(-en.w/2 + 20, -6, 10, 0, Math.PI*2); ctx.fill();
+    // label text centered on rect
     ctx.fillStyle = '#111';
     ctx.font = '700 14px sans-serif';
     ctx.textAlign = 'center';
-    const label = n.alive ? n.label : (n.prankedLabel || 'GONE');
-    ctx.fillText(label, n.x, n.y + 4);
+    const label = en.alive ? en.label : (en.prankedLabel || 'GONE');
+    ctx.fillText(label, 0, 6);
     ctx.restore();
   }
 
-  // draw SK player
-  const sx = SK.x(), sy = SK.y();
-  // base plane / character box
-  ctx.fillStyle = '#00ff9c';
-  ctx.fillRect(sx - SK.w/2, sy - SK.h/2, SK.w, SK.h);
-  // head/bamboo icon
-  ctx.fillStyle = '#072';
-  ctx.fillRect(sx + SK.w/2 - 18, sy - 6, 12, 12); // little stick end
-  // SK label
-  ctx.fillStyle = '#001';
-  ctx.font = '800 18px sans-serif';
-  ctx.textAlign = 'center';
-  ctx.fillText('SK', sx, sy + 6);
-
-  // swing visual feedback (arc)
-  const now = performance.now();
-  if(SK.swingTime && now - SK.swingTime < SK.swingDuration){
-    const prog = (now - SK.swingTime) / SK.swingDuration;
-    const alpha = 1 - prog;
-    ctx.save();
-    ctx.strokeStyle = 'rgba(255,255,255,'+alpha+')';
-    ctx.lineWidth = 4;
-    ctx.beginPath();
-    ctx.arc(sx, sy - 10, 140, -Math.PI*0.9, -Math.PI*0.1);
-    ctx.stroke();
-    ctx.restore();
-  }
-
-  // top-left score already in UI, but draw small mini
-  ctx.fillStyle = '#fff';
-  ctx.font = '700 14px sans-serif';
-  ctx.fillText('Score: '+score, 14, 28);
-}
-
-</script>
-</body>
-</html>
+  // draw SK at left end
+  const sx = SK.x, sy = SK.y();
