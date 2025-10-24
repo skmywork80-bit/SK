@@ -56,7 +56,7 @@
       </div>
 
       <div class="counter" id="counter">সর্বমোট পাঠানো: <strong id="count">0</strong> / 10</div>
-      <div class="timer" id="timer">Time left: <span id="time">00:20</span></div>
+      <div class="timer" id="timer">Time left: <span id="time">00:30</span></div>
 
       <p class="hint">বন্ধুকে মেসেজ করতে থাকো — একবার তারা মেসেজ করলে তুমি পরে রিভিল লিংক দিতে পারো।</p>
     </div>
@@ -85,15 +85,12 @@
       let interval = setInterval(()=> {
         count++;
         countEl.innerText = count;
-        if(count >= maxCount){ clearInterval(interval); finishPrank(); }
+        if(count >= maxCount){ clearInterval(interval); (); }
       }, 200);
     }
   });
 
-  function finishPrank(){
-    // keep silent to maintain prank; small visual feedback only
-    flashRow();
-    playBeep();
+  
   }
 
   function flashRow(){
