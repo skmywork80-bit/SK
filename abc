@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>SORRY BRO — YOUR PHONE IS HACKED</title>
+<style>
+  :root{--neon:#00ff7f;--accent:#ff4d4d;--bg1:#000;--bg2:#06030a;}
+  html,body{height:100%;margin:0;font-family: "Inter", "Courier New", monospace;background: radial-gradient(circle at 10% 10%, rgba(0,255,127,0.03), transparent 10%), linear-gradient(120deg,var(--bg1),var(--bg2)); color:var(--neon); -webkit-font-smoothing:antialiased;}
+  .wrap{min-height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:28px;box-sizing:border-box;}
+  .screen{max-width:920px;width:100%;border-radius:12px;padding:24px;background:linear-gradient(180deg, rgba(0,0,0,0.55), rgba(0,0,0,0.35));box-shadow:0 10px 40px rgba(0,0,0,0.6);border:1px solid rgba(0,255,127,0.08);}
+  .topline{font-size:2.4rem;font-weight:900;letter-spacing:2px;text-transform:uppercase;color:#fff;text-align:center;margin:0 0 6px;}
+  h1{margin:6px 0 12px;font-size:1.8rem;letter-spacing:2px;text-transform:uppercase;color:var(--neon);text-align:center;}
+  .glitch{position:relative;display:inline-block;font-weight:800;font-size:1.6rem;line-height:1;}
+  .glitch::before,.glitch::after{content:attr(data-text);position:absolute;left:0;top:0;mix-blend-mode:screen;opacity:.8;}
+  .glitch::before{transform:translate(-2px,-2px) skew(-3deg); color:#ff4d4d; clip-path: inset(0 0 50% 0);}
+  .glitch::after{transform:translate(2px,2px) skew(3deg); color:#00bfff; clip-path: inset(50% 0 0 0);}
+  .status{margin:12px 0 18px;font-size:1rem;text-align:center; color:#bfffcf;}
+  .list{background:rgba(0,0,0,0.35);padding:12px;border-radius:8px; border:1px solid rgba(0,255,127,0.06);}
+  .list li{padding:8px 6px;border-bottom:1px dashed rgba(0,255,127,0.04); font-weight:600;}
+  .danger{color:var(--accent);font-weight:800;}
+  .controls{display:flex;gap:10px;flex-wrap:wrap;margin-top:16px;align-items:center;justify-content:center;}
+  .btn{background:transparent;border:1.8px solid rgba(0,255,127,0.9);padding:10px 14px;border-radius:8px;color:var(--neon);text-decoration:none;font-weight:700;cursor:pointer;}
+  .btn.danger{border-color:rgba(255,77,77,0.95);color:var(--accent);}
+  .counter{font-size:1.2rem;margin-top:12px;text-align:center;}
+  .timer{font-family:monospace;margin-top:10px;text-align:center;color:#aaffc9;}
+  .hint{margin-top:14px;font-size:0.95rem;color:#caffdb;text-align:center;}
+  @media(max-width:520px){
+    .topline{font-size:1.6rem}
+    h1{font-size:1.2rem}
+    .glitch{font-size:1rem}
+  }
+</style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="screen" role="main">
+      <div class="topline">SORRY BRO</div>
+      <h1 class="glitch" data-text="YOUR PHONE IS HACKED">YOUR PHONE IS HACKED</h1>
+      <p class="status">সিস্টেম রিপোর্ট: <span class="danger">CRITICAL</span> — আপনার ফোনে অননুমোদিত এক্সেস শনাক্ত করা হয়েছে।</p>
+
+      <ul class="list" aria-live="polite">
+        <li>CAMERA ACCESS: <strong class="danger">GRANTED</strong></li>
+        <li>MIC ACCESS: <strong class="danger">GRANTED</strong></li>
+        <li>FILES ACCESS: <strong class="danger">GRANTED</strong></li>
+        <li>GALLERY ACCESS: <strong class="danger">GRANTED</strong></li>
+      </ul>
+
+      <p style="margin-top:12px;font-weight:700;text-align:center;color:#dfffe6;">
+        বাঁচতে চাইলে — আপনার বন্ধু <strong>সিয়াম খান</strong>-কে ১০ বার “Sorry” লিখে পাঠান।
+      </p>
+
+      <div class="controls">
+        <button class="btn" id="incBtn">I SENT ONE (Tap)</button>
+        <button class="btn danger" id="autoBtn">Auto Fill (Simulate)</button>
+      </div>
+
+      <div class="counter" id="counter">সর্বমোট পাঠানো: <strong id="count">0</strong> / 10</div>
+      <div class="timer" id="timer">Time left: <span id="time">00:20</span></div>
+
+      <p class="hint">বন্ধুকে মেসেজ করতে থাকো — একবার তারা মেসেজ করলে তুমি পরে রিভিল লিংক দিতে পারো।</p>
+    </div>
+  </div>
+
+<script>
+  let count = 0;
+  const maxCount = 10;
+  const countEl = document.getElementById('count');
+  const incBtn = document.getElementById('incBtn');
+  const autoBtn = document.getElementById('autoBtn');
+  let timeLeft = 20;
+  const timeEl = document.getElementById('time');
+
+  incBtn.addEventListener('click', ()=> {
+    if(count < maxCount){
+      count++;
+      countEl.innerText = count;
+      flashRow();
+      if(count === maxCount) finishPrank();
+    }
+  });
+
+  autoBtn.addEventListener('click', ()=> {
+    if(count < maxCount){
+      let interval = setInterval(()=> {
+        count++;
+        countEl.innerText = count;
+        if(count >= maxCount){ clearInterval(interval); finishPrank(); }
+      }, 200);
+    }
+  });
+
+  function finishPrank(){
+    // keep silent to maintain prank; small visual feedback only
+    flashRow();
+    playBeep();
+  }
+
+  function flashRow(){
+    const list = document.querySelector('.list');
+    list.style.boxShadow = '0 0 40px rgba(0,255,127,0.12)';
+    setTimeout(()=> list.style.boxShadow = 'none', 400);
+  }
+
+  function playBeep(){
+    try{
+      const ctx = new (window.AudioContext || window.webkitAudioContext)();
+      const o = ctx.createOscillator();
+      const g = ctx.createGain();
+      o.type = 'sine';
+      o.frequency.value = 880;
+      o.connect(g);
+      g.connect(ctx.destination);
+      o.start();
+      g.gain.exponentialRampToValueAtTime(0.00001, ctx.currentTime + 0.25);
+    }catch(e){}
+  }
+
+  const timerInterval = setInterval(()=> {
+    timeLeft--;
+    if(timeLeft < 0) { clearInterval(timerInterval); return; }
+    let m = Math.floor(timeLeft/60).toString().padStart(2,'0');
+    let s = (timeLeft%60).toString().padStart(2,'0');
+    timeEl.innerText = m+':'+s;
+  }, 1000);
+</script>
+</body>
+</html>
