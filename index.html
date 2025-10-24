@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Access Granted - SIYAM</title>
+<style>
+  body { background:#000; color:#00ff00; font-family: "Courier New", monospace; text-align:center; padding:40px; }
+  .glitch { font-size:2rem; animation: glitch 1s infinite; }
+  @keyframes glitch {
+    0% { text-shadow: 2px 2px red; transform: translate(0,0); }
+    25% { text-shadow: -2px 2px blue; transform: translate(-1px,1px); }
+    50% { text-shadow: 2px -2px cyan; transform: translate(1px,-1px); }
+    75% { text-shadow: -2px -2px magenta; transform: translate(-1px,-1px); }
+    100% { text-shadow: 2px 2px yellow; transform: translate(0,0); }
+  }
+  .terminal { background: rgba(0,0,0,0.6); border:1px solid #00ff00; padding:20px; border-radius:8px; display:inline-block; margin-top:20px; }
+  .btn { display:inline-block; margin-top:18px; padding:10px 14px; border:2px solid #00ff00; color:#00ff00; border-radius:6px; text-decoration:none; }
+</style>
+</head>
+<body>
+  <h2>🔐 SYSTEM ACCESS REQUIRED</h2>
+  <div class="terminal">
+    <p>Verifying identity for: <strong>SIYAM</strong>...</p>
+    <p>Loading birthday protocol <span id="dots">.</span></p>
+  </div>
+  <h1 class="glitch">ACCESS GRANTED ✅</h1>
+  <h2>🎉 YOUR MOBILE IS HACKED , SIYAM! 🎉</h2>
+  <p>System Message: You leveled up. Mission: Celebrate. 🚀</p>
+  <a class="btn" href="#" onclick="confetti();return false;">LAUNCH SURPRISE</a>
+
+<script>
+  let d = 0;
+  setInterval(()=>{ d = (d+1)%4; document.getElementById('dots').innerText='.'.repeat(d); }, 500);
+  function confetti(){
+    alert('🎊 Surprise! অনেক অনেক শুভেচ্ছা, SIYAM! 🎊');
+  }
+</script>
+</body>
+</html>
