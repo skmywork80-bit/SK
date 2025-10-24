@@ -226,3 +226,66 @@ function render(){
 
   // draw SK at left end
   const sx = SK.x, sy = SK.y();
+  ctx.fillStyle = '#00ff9c';
+  ctx.fillRect(sx - SK.w/2, sy - SK.h/2, SK.w, SK.h);
+  // stick icon (simple)
+  ctx.fillStyle = '#6b3';
+  ctx.fillRect(sx + SK.w/2 - 18, sy - 8, 10, 10);
+  // SK label
+  ctx.fillStyle = '#001';
+  ctx.font = '800 18px sans-serif';
+  ctx.textAlign = 'center';
+  ctx.fillText('SK', sx, sy + 6);
+
+  // swing visual arc if swinging
+  const now = performance.now();
+  if(SK.swingAt && now - SK.swingAt < SK.swingDur){
+    const prog = (now - SK.swingAt) / SK.swingDur;
+    const alpha = 1 - prog;
+    ctx.save();
+    ctx.strokeStyle = 'rgba(255,255,255,' + alpha + ')';
+    ctx.lineWidth = 4;
+    ctx.beginPath();
+    ctx.arc(sx + 20, sy - 10, 140, -Math.PI*0.9, -Math.PI*0.1);
+    ctx.stroke();
+    ctx.restore();
+  }
+
+  // UI score drawn by DOM too, but show top-left mini
+  ctx.fillStyle = '#fff';
+  ctx.font = '700 14px sans-serif';
+  ctx.fillText('Score: ' + score, 14, 28);
+}
+
+// main loop
+let last = performance.now();
+function loop(now){
+  const dt = now - last; last = now;
+  update(dt);
+  render();
+  requestAnimationFrame(loop);
+}
+requestAnimationFrame(loop);
+
+// spawn helpers
+function spawnInitial(n){
+  enemies = [];
+  for(let i=0;i<n;i++){
+    enemies.push({x: canvas.width + 60 + i*180, y: roadY() - (Math.random()*40 - 10), w:110,h:46, vx: - (1.2 + Math.random()*0.8), label: ['TEACHER','MADAM','SIR'][i%3], alive:true, t:0});
+  }
+}
+function spawnAll(){
+  spawnEnemy();
+}
+
+// confetti & puff updates already handled in spawn functions
+
+// restart handler
+restartBtn.addEventListener('click', ()=>{ setScore(0); confetti=[]; puffs=[]; spawnInitial(3); });
+
+// initialize
+spawnInitial(3);
+setScore(0);
+</script>
+</body>
+</html>
