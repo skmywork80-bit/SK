@@ -1,76 +1,286 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="bn">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Catch the Falling Stars</title>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Sky Defender — MD SIYAM KHAN</title>
 <style>
-  body{margin:0;overflow:hidden;font-family:sans-serif;background:#0d0d0d;color:#fff;}
-  canvas{display:block;background:#111;}
-  #score{position:absolute;top:10px;left:50%;transform:translateX(-50%);font-size:24px;}
+  :root{--bg:#020205;--panel:#071017;--accent:#00ff7f;--danger:#ff4d4d;--text:#dfffe6;}
+  html,body{height:100%;margin:0;background:linear-gradient(180deg,#000,#05060a);font-family: "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;color:var(--text);}
+  #gameWrap{position:relative;height:100vh;overflow:hidden;}
+  canvas{display:block;background:linear-gradient(180deg, rgba(0,0,0,0.2), rgba(0,0,0,0.4));width:100%;height:100%;}
+  .hud{
+    position:absolute;left:12px;top:12px;z-index:20;
+    background:rgba(0,0,0,0.35);padding:8px 12px;border-radius:10px;border:1px solid rgba(0,255,127,0.06);
+    display:flex;gap:12px;align-items:center;
+  }
+  .title{
+    font-weight:800;font-size:14px;letter-spacing:1px;text-transform:uppercase;color:var(--accent);
+  }
+  .sub{font-size:12px;color:#caffdb;font-weight:700;}
+  .controls{position:absolute;right:12px;top:12px;z-index:20;display:flex;gap:8px;}
+  .btn{
+    background:#007bff;border-radius:8px;padding:8px 12px;color:white;text-decoration:none;font-weight:800;border:none;cursor:pointer;box-shadow:0 6px 18px rgba(0,0,0,0.4);
+  }
+  .small{font-size:13px;padding:6px 10px;border-radius:7px}
+  .scoreBoard{position:absolute;left:50%;transform:translateX(-50%);top:12px;background:rgba(0,0,0,0.4);padding:8px 14px;border-radius:12px;font-weight:800}
+  .infoBox{position:absolute;left:12px;bottom:12px;background:rgba(0,0,0,0.35);padding:10px;border-radius:10px;font-size:13px;max-width:320px;}
+  /* mobile hint */
+  .hint{font-size:12px;color:#cfefd4}
 </style>
 </head>
 <body>
-<div id="score">Score: 0</div>
-<canvas id="gameCanvas"></canvas>
+<div id="gameWrap">
+  <div class="hud">
+    <div>
+      <div class="title">MD SIYAM KHAN</div>
+      <div class="sub" id="rollLabel">ROLL: 2</div>
+    </div>
+  </div>
+
+  <div class="scoreBoard" id="scoreBoard">Score: 0</div>
+
+  <div class="controls">
+    <button class="btn small" id="toggleRoll">Set ROLL: 4</button>
+    <button class="btn small" id="restartBtn">Restart</button>
+  </div>
+
+  <canvas id="game"></canvas>
+
+  <div class="infoBox">
+    <div><strong>How to play</strong></div>
+    <div class="hint">Move your plane: drag/touch or move mouse. Shoot: tap/click. ROLL controls how many missiles fire per shot.</div>
+  </div>
+</div>
+
 <script>
-const canvas = document.getElementById('gameCanvas');
+/* Sky Defender — JS Game
+   Player at bottom with label MD SIYAM KHAN
+   ROLL indicates number of missiles per shot (2 or 4)
+   Enemies fall from top; destroy them by shooting upward.
+*/
+
+const canvas = document.getElementById('game');
 const ctx = canvas.getContext('2d');
-canvas.width = window.innerWidth;
-canvas.height = window.innerHeight;
+let W = canvas.width = window.innerWidth;
+let H = canvas.height = window.innerHeight;
 
+window.addEventListener('resize', ()=>{ W = canvas.width = window.innerWidth; H = canvas.height = window.innerHeight; });
+
+// Game state
 let score = 0;
-const player = {x: canvas.width/2, y: canvas.height-50, width: 80, height: 20, color:'#0f0'};
-const stars = [];
-const starCount = 5;
-for(let i=0;i<starCount;i++){
-  stars.push({x:Math.random()*canvas.width, y:Math.random()*-canvas.height, radius:20, color:'#ff0', speed:2+Math.random()*3});
+let roll = 2; // initial ROLL
+const scoreBoard = document.getElementById('scoreBoard');
+const rollLabel = document.getElementById('rollLabel');
+const toggleRollBtn = document.getElementById('toggleRoll');
+const restartBtn = document.getElementById('restartBtn');
+
+function updateLabels(){
+  rollLabel.innerText = 'ROLL: ' + roll;
+  toggleRollBtn.innerText = (roll===2) ? 'Set ROLL: 4' : 'Set ROLL: 2';
 }
 
-function drawPlayer(){
-  ctx.fillStyle = player.color;
-  ctx.fillRect(player.x, player.y, player.width, player.height);
+// Player plane (at bottom)
+const player = {
+  x: W/2 - 40,
+  y: H - 90,
+  w: 80,
+  h: 28,
+  color: '#00d166',
+  speed: 12
+};
+
+// Missiles array
+let missiles = []; // each {x,y,vx,vy,r}
+let enemies = [];  // each {x,y,r,spd}
+
+// Spawn enemies (falling planes/balls)
+function spawnEnemy(){
+  const r = 16 + Math.random()*10;
+  const x = Math.random()*(W - r*2) + r;
+  const y = -20 - Math.random()*200;
+  const spd = 1.5 + Math.random()*2.2 + Math.min(score/30, 3); // speed increases as score increases
+  enemies.push({x,y,r,spd});
 }
 
-function drawStars(){
-  for(const s of stars){
+// initial enemies
+for(let i=0;i<6;i++) spawnEnemy();
+
+// Input (mouse + touch)
+let isDown = false;
+let pointerX = player.x + player.w/2;
+canvas.addEventListener('mousedown', (e)=>{ isDown = true; pointerX = e.clientX; });
+canvas.addEventListener('mousemove', (e)=>{ if(isDown) pointerX = e.clientX; });
+window.addEventListener('mouseup', ()=> isDown=false);
+canvas.addEventListener('touchstart', (e)=>{ isDown = true; pointerX = e.touches[0].clientX; e.preventDefault(); }, {passive:false});
+canvas.addEventListener('touchmove', (e)=>{ pointerX = e.touches[0].clientX; e.preventDefault(); }, {passive:false});
+canvas.addEventListener('touchend', ()=> isDown=false);
+
+// shooting control: tap/click shoots
+canvas.addEventListener('click', ()=> shoot());
+
+// also allow space key to shoot
+window.addEventListener('keydown', (e)=>{ if(e.code === 'Space') shoot(); });
+
+// shoot function — creates `roll` missiles in a spread
+function shoot(){
+  const cx = player.x + player.w/2;
+  const spread = (roll === 2) ? 18 : 36; // degrees total spread approx
+  const count = roll;
+  // compute spread angles centered upwards (-90deg)
+  for(let i=0;i<count;i++){
+    const t = (count===1) ? 0 : (i/(count-1) - 0.5); // -0.5 .. 0.5
+    const angle = -Math.PI/2 + t * (spread * Math.PI/180);
+    const speed = 6.5;
+    const vx = Math.cos(angle) * speed;
+    const vy = Math.sin(angle) * speed;
+    missiles.push({x: cx, y: player.y, vx, vy, r:6});
+  }
+  // small sound (beep)
+  try{
+    const ctxA = new (window.AudioContext || window.webkitAudioContext)();
+    const o = ctxA.createOscillator(); const g = ctxA.createGain();
+    o.type='sine'; o.frequency.value = 880; o.connect(g); g.connect(ctxA.destination); o.start();
+    g.gain.exponentialRampToValueAtTime(0.00001, ctxA.currentTime + 0.08);
+  }catch(e){}
+}
+
+// game loop
+let lastTime = 0;
+function update(dt){
+  // player follow pointer smoothly
+  const targetX = Math.max(10, Math.min(pointerX - player.w/2, W - player.w - 10));
+  player.x += (targetX - player.x) * 0.24;
+
+  // update missiles
+  for(let i = missiles.length-1; i>=0; i--){
+    const m = missiles[i];
+    m.x += m.vx;
+    m.y += m.vy;
+    // remove if off screen
+    if(m.y < -20 || m.x < -50 || m.x > W+50) missiles.splice(i,1);
+  }
+
+  // update enemies
+  for(let i = enemies.length-1; i>=0; i--){
+    const en = enemies[i];
+    en.y += en.spd;
+    // collision with missiles
+    for(let j = missiles.length-1; j>=0; j--){
+      const m = missiles[j];
+      const dx = en.x - m.x; const dy = en.y - m.y;
+      const dist = Math.sqrt(dx*dx + dy*dy);
+      if(dist < en.r + m.r){
+        // hit
+        enemies.splice(i,1);
+        missiles.splice(j,1);
+        score += 1;
+        scoreBoard.innerText = 'Score: ' + score;
+        // spawn 1-2 new enemies to keep flow
+        spawnEnemy();
+        if(Math.random() < 0.4) spawnEnemy();
+        break;
+      }
+    }
+    // enemy reaches bottom -> penalty: reduce score slightly and respawn
+    if(en && en.y - en.r > H){
+      // penalize a bit
+      score = Math.max(0, score - 1);
+      scoreBoard.innerText = 'Score: ' + score;
+      enemies.splice(i,1);
+      spawnEnemy();
+    }
+  }
+}
+
+function draw(){
+  // clear
+  ctx.fillStyle = '#020207';
+  ctx.fillRect(0,0,W,H);
+
+  // draw enemies (planes/balls)
+  for(const en of enemies){
+    // simple plane shape: body circle + small wings
+    ctx.save();
+    ctx.translate(en.x,en.y);
+    ctx.fillStyle = '#ffbf00';
     ctx.beginPath();
-    ctx.arc(s.x,s.y,s.radius,0,Math.PI*2);
-    ctx.fillStyle = s.color;
+    ctx.arc(0,0,en.r,0,Math.PI*2);
     ctx.fill();
     ctx.closePath();
+    // wings
+    ctx.fillStyle = '#ff8c00';
+    ctx.fillRect(-en.r*1.4, -en.r*0.2, en.r*0.6, en.r*0.3);
+    ctx.fillRect(en.r*0.8, -en.r*0.2, en.r*0.6, en.r*0.3);
+    ctx.restore();
   }
-}
 
-function updateStars(){
-  for(const s of stars){
-    s.y += s.speed;
-    if(s.y > canvas.height){
-      s.y = -20;
-      s.x = Math.random()*canvas.width;
-    }
-    // collision
-    if(s.y + s.radius > player.y && s.y - s.radius < player.y + player.height && s.x > player.x && s.x < player.x + player.width){
-      score++;
-      s.y = -20;
-      s.x = Math.random()*canvas.width;
-      document.getElementById('score').innerText = 'Score: ' + score;
-    }
+  // draw missiles
+  for(const m of missiles){
+    ctx.fillStyle = '#00d1ff';
+    ctx.beginPath();
+    ctx.ellipse(m.x, m.y, m.r*0.6, m.r*1.4, Math.atan2(m.vy, m.vx), 0, Math.PI*2);
+    ctx.fill();
+    ctx.closePath();
+    // flame tail
+    ctx.fillStyle = 'rgba(255,120,20,0.9)';
+    ctx.beginPath();
+    ctx.ellipse(m.x - m.vx*2, m.y - m.vy*2, m.r*0.9, m.r*0.6, 0, 0, Math.PI*2);
+    ctx.fill(); ctx.closePath();
   }
+
+  // draw player plane (simple)
+  ctx.save();
+  ctx.translate(player.x + player.w/2, player.y + player.h/2);
+  // body
+  ctx.fillStyle = '#00d166';
+  ctx.fillRect(-player.w/2, -player.h/2, player.w, player.h);
+  // cockpit
+  ctx.fillStyle = '#001f2d';
+  ctx.fillRect(-12, -player.h/2, 24, player.h*0.9);
+  // label above player
+  ctx.restore();
+  ctx.fillStyle = '#ffffff';
+  ctx.font = '700 18px "Segoe UI", Roboto, Arial';
+  ctx.textAlign = 'center';
+  ctx.fillText('MD SIYAM KHAN', player.x + player.w/2, player.y - 28);
+  ctx.fillStyle = '#caffdb';
+  ctx.font = '700 14px "Segoe UI", Roboto';
+  ctx.fillText('ROLL: ' + roll, player.x + player.w/2, player.y - 8);
 }
 
-function gameLoop(){
-  ctx.clearRect(0,0,canvas.width,canvas.height);
-  drawPlayer();
-  drawStars();
-  updateStars();
-  requestAnimationFrame(gameLoop);
+// frame
+function loop(ts){
+  const dt = ts - lastTime;
+  lastTime = ts;
+  update(dt);
+  draw();
+  requestAnimationFrame(loop);
 }
+requestAnimationFrame(loop);
 
-document.addEventListener('mousemove', e => {player.x = e.clientX - player.width/2;});
-document.addEventListener('touchmove', e => {player.x = e.touches[0].clientX - player.width/2; e.preventDefault();}, {passive:false});
+// spawn new enemies occasionally
+setInterval(()=>{ if(enemies.length < 10) spawnEnemy(); }, 900);
 
-gameLoop();
+// toggle roll button
+toggleRollBtn.addEventListener('click', ()=>{
+  roll = (roll === 2) ? 4 : 2;
+  updateLabels();
+});
+
+// restart
+restartBtn.addEventListener('click', ()=>{
+  score = 0; scoreBoard.innerText = 'Score: 0';
+  missiles = []; enemies = []; for(let i=0;i<6;i++) spawnEnemy();
+});
+
+// initialize labels
+updateLabels();
+
+// friendly mobile tap to shoot: also shoot on touch anywhere
+canvas.addEventListener('touchstart', (e)=>{ shoot(); }, {passive:false});
+canvas.addEventListener('mousedown', (e)=>{ /* shooting handled by click listener above */ });
+
 </script>
 </body>
-</html>
+  </html>
