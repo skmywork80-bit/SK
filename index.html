@@ -3,31 +3,16 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1" />
-<title>YOUR PHONE IS HACKED</title>
+<title>SORRY BRO — YOUR PHONE IS HACKED</title>
 <style>
-  :root{
-    --neon: #00ff7f;
-    --accent: #ff4d4d;
-    --bg1: #000;
-    --bg2: #06030a;
-  }
+  :root{--neon:#00ff7f;--accent:#ff4d4d;--bg1:#000;--bg2:#06030a;}
   html,body{height:100%;margin:0;font-family: "Inter", "Courier New", monospace;background: radial-gradient(circle at 10% 10%, rgba(0,255,127,0.03), transparent 10%), linear-gradient(120deg,var(--bg1),var(--bg2)); color:var(--neon); -webkit-font-smoothing:antialiased;}
   .wrap{min-height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:28px;box-sizing:border-box;}
   .screen{max-width:920px;width:100%;border-radius:12px;padding:24px;background:linear-gradient(180deg, rgba(0,0,0,0.55), rgba(0,0,0,0.35));box-shadow:0 10px 40px rgba(0,0,0,0.6);border:1px solid rgba(0,255,127,0.08);}
-  h1{margin:6px 0 12px;font-size:2.2rem;letter-spacing:2px;text-transform:uppercase;color:var(--neon);text-align:center;}
-  .glitch{
-    position:relative;
-    display:inline-block;
-    font-weight:800;
-    font-size:1.6rem;
-    line-height:1;
-  }
-  .glitch::before, .glitch::after{
-    content:attr(data-text);
-    position:absolute;left:0;top:0;
-    mix-blend-mode:screen;
-    opacity:.8;
-  }
+  .topline{font-size:2.4rem;font-weight:900;letter-spacing:2px;text-transform:uppercase;color:#fff;text-align:center;margin:0 0 6px;}
+  h1{margin:6px 0 12px;font-size:1.8rem;letter-spacing:2px;text-transform:uppercase;color:var(--neon);text-align:center;}
+  .glitch{position:relative;display:inline-block;font-weight:800;font-size:1.6rem;line-height:1;}
+  .glitch::before,.glitch::after{content:attr(data-text);position:absolute;left:0;top:0;mix-blend-mode:screen;opacity:.8;}
   .glitch::before{transform:translate(-2px,-2px) skew(-3deg); color:#ff4d4d; clip-path: inset(0 0 50% 0);}
   .glitch::after{transform:translate(2px,2px) skew(3deg); color:#00bfff; clip-path: inset(50% 0 0 0);}
   .status{margin:12px 0 18px;font-size:1rem;text-align:center; color:#bfffcf;}
@@ -35,25 +20,22 @@
   .list li{padding:8px 6px;border-bottom:1px dashed rgba(0,255,127,0.04); font-weight:600;}
   .danger{color:var(--accent);font-weight:800;}
   .controls{display:flex;gap:10px;flex-wrap:wrap;margin-top:16px;align-items:center;justify-content:center;}
-  .btn{
-    background:transparent;border:1.8px solid rgba(0,255,127,0.9);padding:10px 14px;border-radius:8px;color:var(--neon);text-decoration:none;font-weight:700;cursor:pointer;
-  }
+  .btn{background:transparent;border:1.8px solid rgba(0,255,127,0.9);padding:10px 14px;border-radius:8px;color:var(--neon);text-decoration:none;font-weight:700;cursor:pointer;}
   .btn.danger{border-color:rgba(255,77,77,0.95);color:var(--accent);}
   .counter{font-size:1.2rem;margin-top:12px;text-align:center;}
   .timer{font-family:monospace;margin-top:10px;text-align:center;color:#aaffc9;}
-  .reveal{margin-top:18px;background:linear-gradient(90deg,#00ff7f22,#00bfff22);padding:12px;border-radius:10px;text-align:center;color:#dfffe6;font-weight:800;border:1px solid rgba(255,255,255,0.02);}
-  /* confetti */
-  .confetti-piece{position:fixed;width:10px;height:16px;opacity:0;z-index:9999;pointer-events:none}
-  /* small mobile tweaks */
+  .hint{margin-top:14px;font-size:0.95rem;color:#caffdb;text-align:center;}
   @media(max-width:520px){
-    h1{font-size:1.5rem}
-    .glitch{font-size:1.2rem}
+    .topline{font-size:1.6rem}
+    h1{font-size:1.2rem}
+    .glitch{font-size:1rem}
   }
 </style>
 </head>
 <body>
   <div class="wrap">
     <div class="screen" role="main">
+      <div class="topline">SORRY BRO</div>
       <h1 class="glitch" data-text="YOUR PHONE IS HACKED">YOUR PHONE IS HACKED</h1>
       <p class="status">সিস্টেম রিপোর্ট: <span class="danger">CRITICAL</span> — আপনার ফোনে অননুমোদিত এক্সেস শনাক্ত করা হয়েছে।</p>
 
@@ -65,41 +47,29 @@
       </ul>
 
       <p style="margin-top:12px;font-weight:700;text-align:center;color:#dfffe6;">
-        বাঁচতে চাইলে — আপনার বন্ধু <strong>সিয়াম খান</strong>-কে ১০ বার “Sorry” লিখে পাঠান।  
-        না হলে সিস্টেম সিদ্ধান্ত নেবে... 😉
+        বাঁচতে চাইলে — আপনার বন্ধু <strong>সিয়াম খান</strong>-কে ১০ বার “Sorry” লিখে পাঠান।
       </p>
 
       <div class="controls">
         <button class="btn" id="incBtn">I SENT ONE (Tap)</button>
         <button class="btn danger" id="autoBtn">Auto Fill (Simulate)</button>
-        <button class="btn" id="scareBtn">Make it scarier</button>
       </div>
 
       <div class="counter" id="counter">সর্বমোট পাঠানো: <strong id="count">0</strong> / 10</div>
       <div class="timer" id="timer">Time left: <span id="time">00:20</span></div>
 
-      <div class="reveal" id="revealBox" style="display:none;">
-        🎉 PRANK REVEAL 🎉 <br>
-        এটি কেবল একটি মজার প্র্যাঙ্ক — তোমাকে ভয় দেওয়া ছিল উদ্দেশ্য নয়।  
-        <strong>Happy Birthday from SIYAM! 🥳</strong>
-      </div>
-
-      <div style="text-align:center;margin-top:14px;">
-        <button class="btn" id="revealBtn">I want to know the truth</button>
-      </div>
+      <p class="hint">বন্ধুকে মেসেজ করতে থাকো — একবার তারা মেসেজ করলে তুমি পরে রিভিল লিংক দিতে পারো।</p>
     </div>
   </div>
 
 <script>
-  // Counter logic
   let count = 0;
   const maxCount = 10;
   const countEl = document.getElementById('count');
   const incBtn = document.getElementById('incBtn');
   const autoBtn = document.getElementById('autoBtn');
-  const revealBtn = document.getElementById('revealBtn');
-  const revealBox = document.getElementById('revealBox');
-  const scareBtn = document.getElementById('scareBtn');
+  let timeLeft = 20;
+  const timeEl = document.getElementById('time');
 
   incBtn.addEventListener('click', ()=> {
     if(count < maxCount){
@@ -111,48 +81,27 @@
   });
 
   autoBtn.addEventListener('click', ()=> {
-    // simulate fast increment
     if(count < maxCount){
       let interval = setInterval(()=> {
         count++;
         countEl.innerText = count;
         if(count >= maxCount){ clearInterval(interval); finishPrank(); }
-      }, 250);
+      }, 200);
     }
   });
 
-  revealBtn.addEventListener('click', ()=> {
-    revealPrank();
-  });
-
-  scareBtn.addEventListener('click', ()=> {
-    // toggle some extra scary visuals (quick red flash and beep)
-    document.body.style.background = 'linear-gradient(120deg,#120000,#000)';
-    setTimeout(()=> { document.body.style.background = 'radial-gradient(circle at 10% 10%, rgba(0,255,127,0.03), transparent 10%), linear-gradient(120deg,#000,#06030a)'; }, 1600);
-    playBeep();
-  });
-
   function finishPrank(){
-    // show reveal after tiny dramatic pause
-    setTimeout(()=> {
-      revealPrank();
-    }, 900);
-  }
-
-  function revealPrank(){
-    // show PRANK text and confetti
-    revealBox.style.display = 'block';
-    launchConfetti();
+    // keep silent to maintain prank; small visual feedback only
+    flashRow();
+    playBeep();
   }
 
   function flashRow(){
-    // gentle flash effect when increment
     const list = document.querySelector('.list');
     list.style.boxShadow = '0 0 40px rgba(0,255,127,0.12)';
     setTimeout(()=> list.style.boxShadow = 'none', 400);
   }
 
-  // small beep sound
   function playBeep(){
     try{
       const ctx = new (window.AudioContext || window.webkitAudioContext)();
@@ -167,40 +116,13 @@
     }catch(e){}
   }
 
-  // mini timer countdown (starts at 20s)
-  let timeLeft = 20;
-  const timeEl = document.getElementById('time');
   const timerInterval = setInterval(()=> {
     timeLeft--;
-    if(timeLeft < 0) { clearInterval(timerInterval); /* optional: auto reveal */ revealPrank(); return; }
+    if(timeLeft < 0) { clearInterval(timerInterval); return; }
     let m = Math.floor(timeLeft/60).toString().padStart(2,'0');
     let s = (timeLeft%60).toString().padStart(2,'0');
     timeEl.innerText = m+':'+s;
   }, 1000);
-
-  // confetti function (simple)
-  function launchConfetti(){
-    const colors = ['#ffce00','#ff4d4d','#00ff7f','#00bfff','#d400ff'];
-    for(let i=0;i<60;i++){
-      const el = document.createElement('div');
-      el.className = 'confetti-piece';
-      el.style.left = Math.random()*100 + '%';
-      el.style.top = '-10px';
-      el.style.width = (6+Math.random()*8)+'px';
-      el.style.height = (8+Math.random()*10)+'px';
-      el.style.background = colors[Math.floor(Math.random()*colors.length)];
-      el.style.opacity = 1;
-      el.style.transform = 'rotate('+Math.random()*360+'deg)';
-      document.body.appendChild(el);
-      // animate
-      const fall = el.animate([
-        { transform: 'translateY(0) rotate(0deg)', opacity:1 },
-        { transform: 'translateY(90vh) rotate(720deg)', opacity:1 }
-      ], { duration: 1600+Math.random()*1400, easing:'cubic-bezier(.17,.67,.83,.67)'});
-      // remove after
-      fall.onfinish = ()=> el.remove();
-    }
-  }
 </script>
 </body>
-  </html>
+</html>
