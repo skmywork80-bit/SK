@@ -1,251 +1,289 @@
-import pygame
-import sys
-import random
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Web Sandbox Game</title>
+    <style>
+        /* CSS for basic styling */
+        body {
+            margin: 0;
+            overflow: hidden; /* Hide scrollbars */
+            background-color: #87ceeb; /* Sky Blue */
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+        }
 
-# --- Game Constants ---
-TILE_SIZE = 32  # Size of each block/tile in pixels
-SCREEN_WIDTH = 800
-SCREEN_HEIGHT = 600
-MAP_WIDTH = 50  # Number of tiles wide (for a simple map)
-MAP_HEIGHT = 50 # Number of tiles high
-FPS = 60
+        /* The main game container/world */
+        #game-container {
+            position: relative;
+            width: 800px;
+            height: 600px;
+            border: 2px solid black;
+            overflow: hidden; /* To simulate camera view */
+        }
 
-# --- Colors ---
-WHITE = (255, 255, 255)
-BLACK = (0, 0, 0)
-SKY_BLUE = (135, 206, 235)
-DIRT_BROWN = (139, 69, 19)
-GRASS_GREEN = (0, 150, 0)
-HIGHLIGHT_COLOR = (255, 255, 0) # For the crosshair/selection
+        /* Player character style */
+        #player {
+            position: absolute;
+            width: 32px;
+            height: 64px; /* Tall character */
+            background-color: black;
+            z-index: 100;
+            transition: top 0.05s linear, left 0.05s linear; /* Smooth movement visually */
+        }
 
-# --- Block Types (IDs) ---
-AIR = 0
-GRASS = 1
-DIRT = 2
-BRICK = 3
+        /* Block (Tile) style */
+        .tile {
+            position: absolute;
+            width: 32px;
+            height: 32px;
+            box-sizing: border-box;
+            border: 1px solid rgba(0, 0, 0, 0.2);
+        }
 
-# --- Initialize Pygame ---
-pygame.init()
-screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
-pygame.display.set_caption("2D Mobile Sandbox Game")
-clock = pygame.time.Clock()
+        .grass {
+            background-color: #009600; /* Grass Green */
+        }
 
-# --- World Generation (Simple flat terrain) ---
-def generate_world():
-    world = [[AIR for _ in range(MAP_WIDTH)] for _ in range(MAP_HEIGHT)]
-    # Create the surface layer
-    surface_level = MAP_HEIGHT // 2
-    for x in range(MAP_WIDTH):
-        world[surface_level][x] = GRASS
-        # Below the surface is dirt
-        for y in range(surface_level + 1, MAP_HEIGHT):
-            world[y][x] = DIRT
-    return world
+        .dirt {
+            background-color: #8b4513; /* Dirt Brown */
+        }
 
-world_data = generate_world()
+        .brick {
+            background-color: #964b00; /* Brick Brown */
+        }
 
-# --- Player Class ---
-class Player(pygame.sprite.Sprite):
-    def __init__(self, x, y):
-        super().__init__()
-        self.image = pygame.Surface((TILE_SIZE, TILE_SIZE * 2)) # Tall character
-        self.image.fill(BLACK) # Simple black rectangle for the character
-        self.rect = self.image.get_rect(topleft=(x, y))
-        self.speed = 4
+        /* UI Styles (Simplified Mobile Controls for Web) */
+        #ui-controls {
+            position: absolute;
+            bottom: 10px;
+            right: 10px;
+            display: flex;
+            gap: 10px;
+            z-index: 200;
+        }
+
+        .ui-button {
+            width: 60px;
+            height: 60px;
+            background-color: #555;
+            color: white;
+            border-radius: 50%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 24px;
+            cursor: pointer;
+            user-select: none;
+            box-shadow: 2px 2px 5px rgba(0, 0, 0, 0.5);
+        }
         
-    def update(self, dx, dy):
-        # Basic movement - needs proper collision and gravity for a real game
-        self.rect.x += dx * self.speed
-        self.rect.y += dy * self.speed
+        /* Crosshair/Selection */
+        #crosshair {
+            position: absolute;
+            width: 32px;
+            height: 32px;
+            border: 2px solid yellow;
+            pointer-events: none; /* Allows clicks to pass through */
+            z-index: 150;
+        }
+
+    </style>
+</head>
+<body>
+
+<div id="game-container">
+    <div id="player"></div>
+    <div id="crosshair"></div>
+</div>
+
+<div id="ui-controls">
+    <div class="ui-button" id="place-button">🧱</div> <div class="ui-button" id="dig-button">⛏️</div>   </div>
+
+<script>
+    // --- Game Configuration ---
+    const TILE_SIZE = 32;
+    const MAP_WIDTH = 50;
+    const MAP_HEIGHT = 50;
+    const CONTAINER_WIDTH = 800;
+    const CONTAINER_HEIGHT = 600;
+
+    // --- DOM Elements ---
+    const gameContainer = document.getElementById('game-container');
+    const playerElement = document.getElementById('player');
+    const crosshairElement = document.getElementById('crosshair');
+    const digButton = document.getElementById('dig-button');
+    const placeButton = document.getElementById('place-button');
+
+    // --- Game State ---
+    let player = {
+        x: (MAP_WIDTH / 2) * TILE_SIZE,
+        y: (MAP_HEIGHT / 2) * TILE_SIZE - 64, // Start above the ground
+        speed: 5
+    };
+
+    let camera = {
+        x: 0,
+        y: 0
+    };
+
+    let worldData = [];
+    const blockTypes = {
+        0: 'air',
+        1: 'grass',
+        2: 'dirt',
+        3: 'brick'
+    };
+
+    // --- World Generation ---
+    function generateWorld() {
+        const surfaceLevel = MAP_HEIGHT / 2;
+        for (let y = 0; y < MAP_HEIGHT; y++) {
+            worldData[y] = [];
+            for (let x = 0; x < MAP_WIDTH; x++) {
+                if (y === surfaceLevel) {
+                    worldData[y][x] = 1; // Grass
+                } else if (y > surfaceLevel) {
+                    worldData[y][x] = 2; // Dirt
+                } else {
+                    worldData[y][x] = 0; // Air
+                }
+            }
+        }
+    }
+
+    // --- Rendering Functions ---
+    function renderWorld() {
+        // Clear old tiles (for simplicity, we re-render everything)
+        // In a complex game, you'd only update visible tiles.
+        const existingTiles = gameContainer.querySelectorAll('.tile');
+        existingTiles.forEach(tile => tile.remove());
+
+        for (let y = 0; y < MAP_HEIGHT; y++) {
+            for (let x = 0; x < MAP_WIDTH; x++) {
+                const blockId = worldData[y][x];
+                if (blockId !== 0) {
+                    const tileDiv = document.createElement('div');
+                    tileDiv.classList.add('tile', blockTypes[blockId]);
+                    tileDiv.style.left = `${x * TILE_SIZE}px`;
+                    tileDiv.style.top = `${y * TILE_SIZE}px`;
+                    tileDiv.dataset.x = x;
+                    tileDiv.dataset.y = y;
+                    gameContainer.appendChild(tileDiv);
+                }
+            }
+        }
+    }
+
+    function updateCamera() {
+        // Center the camera on the player
+        camera.x = player.x - CONTAINER_WIDTH / 2 + playerElement.offsetWidth / 2;
+        camera.y = player.y - CONTAINER_HEIGHT / 2 + playerElement.offsetHeight / 2;
+
+        // Apply camera offset to the game container
+        gameContainer.style.transform = `translate(${-camera.x}px, ${-camera.y}px)`;
+
+        // Update player's position (relative to the container, before transform)
+        playerElement.style.left = `${player.x}px`;
+        playerElement.style.top = `${player.y}px`;
+    }
+
+    // --- Interaction Functions ---
+    function getSelectedBlock() {
+        // Crosshair is fixed at the center of the screen
+        const crosshairCenterX = camera.x + CONTAINER_WIDTH / 2;
+        const crosshairCenterY = camera.y + CONTAINER_HEIGHT / 2;
+
+        const gridX = Math.floor(crosshairCenterX / TILE_SIZE);
+        const gridY = Math.floor(crosshairCenterY / TILE_SIZE);
         
-        # Keep player within world bounds (simple check)
-        self.rect.x = max(0, min(self.rect.x, MAP_WIDTH * TILE_SIZE - self.rect.width))
-        self.rect.y = max(0, min(self.rect.y, MAP_HEIGHT * TILE_SIZE - self.rect.height))
+        // Update crosshair visual
+        crosshairElement.style.left = `${gridX * TILE_SIZE}px`;
+        crosshairElement.style.top = `${gridY * TILE_SIZE}px`;
 
-# --- Game Components Initialization ---
-player = Player(MAP_WIDTH * TILE_SIZE // 2, (MAP_HEIGHT // 2) * TILE_SIZE - TILE_SIZE * 2)
-all_sprites = pygame.sprite.Group()
-all_sprites.add(player)
+        if (gridX >= 0 && gridX < MAP_WIDTH && gridY >= 0 && gridY < MAP_HEIGHT) {
+            return { x: gridX, y: gridY };
+        }
+        return null;
+    }
 
-# --- Camera / Viewport Offset ---
-# This simulates the 'unlimited' field by moving the world, not the player in the viewport
-camera_offset_x = 0
-camera_offset_y = 0
+    function handleBlockAction(action) {
+        const selected = getSelectedBlock();
+        if (!selected) return;
 
-# --- Selection/Crosshair Logic ---
-selected_block_pos = (0, 0) # (grid_x, grid_y)
-selected_item = DIRT # Default item to place/use (Dirt block)
-
-def get_selected_tile(player_rect, offset_x, offset_y):
-    # Determine the tile the crosshair is on (e.g., 2 tiles in front and slightly down from the player)
-    
-    # Player's screen position
-    player_screen_x = player_rect.x - offset_x
-    player_screen_y = player_rect.y - offset_y
-    
-    # For a simple game, let's say the crosshair is at a fixed offset relative to the player
-    # Example: 1 tile in front (x) and same level as feet (y)
-    
-    # Fixed screen position for the crosshair (center of the screen is common for mobile)
-    crosshair_screen_x = SCREEN_WIDTH // 2 
-    crosshair_screen_y = SCREEN_HEIGHT // 2
-    
-    # Convert screen coordinates to world coordinates
-    world_x = crosshair_screen_x + offset_x
-    world_y = crosshair_screen_y + offset_y
-    
-    # Convert world coordinates to grid coordinates
-    grid_x = world_x // TILE_SIZE
-    grid_y = world_y // TILE_SIZE
-    
-    return grid_x, grid_y
-
-
-# --- Game Functions ---
-def draw_world():
-    for y in range(MAP_HEIGHT):
-        for x in range(MAP_WIDTH):
-            block_id = world_data[y][x]
-            # Calculate block's screen position using camera offset
-            rect = pygame.Rect(x * TILE_SIZE - camera_offset_x, 
-                               y * TILE_SIZE - camera_offset_y, 
-                               TILE_SIZE, TILE_SIZE)
-            
-            color = WHITE
-            if block_id == GRASS:
-                color = GRASS_GREEN
-            elif block_id == DIRT:
-                color = DIRT_BROWN
-            elif block_id == BRICK:
-                color = (150, 75, 0) # Brick color
-            elif block_id == AIR:
-                continue # Don't draw air, show the background
-            
-            pygame.draw.rect(screen, color, rect)
-
-def draw_ui():
-    # --- Mobile-Style Controller (Simplified for keyboard mapping) ---
-    # Draw D-pad for movement (Bottom Left Corner)
-    dpad_size = 100
-    dpad_x = 20
-    dpad_y = SCREEN_HEIGHT - dpad_size - 20
-    
-    # Simple D-pad representation
-    pygame.draw.circle(screen, BLACK, (dpad_x + dpad_size // 2, dpad_y + dpad_size // 2), dpad_size // 2, 2)
-    
-    # --- Action Buttons (Bottom Right Corner) ---
-    button_size = 50
-    button_margin = 10
-    
-    # 1. Place Block Button (Brick Icon/Color)
-    place_button_rect = pygame.Rect(SCREEN_WIDTH - button_size * 2 - button_margin * 2, SCREEN_HEIGHT - button_size - button_margin, button_size, button_size)
-    pygame.draw.rect(screen, (100, 100, 100), place_button_rect, 0, 5) # Background
-    pygame.draw.rect(screen, (150, 75, 0), place_button_rect.inflate(-10, -10)) # Brick Icon
-    
-    # 2. Dig/Break Block Button (Pickaxe/Shovel Icon - using a simple 'X')
-    dig_button_rect = pygame.Rect(SCREEN_WIDTH - button_size - button_margin, SCREEN_HEIGHT - button_size - button_margin, button_size, button_size)
-    pygame.draw.rect(screen, (100, 100, 100), dig_button_rect, 0, 5) # Background
-    pygame.draw.line(screen, WHITE, dig_button_rect.topleft, dig_button_rect.bottomright, 3)
-    pygame.draw.line(screen, WHITE, dig_button_rect.topright, dig_button_rect.bottomleft, 3)
-    
-    # --- Crosshair (Center of the screen for block interaction) ---
-    crosshair_size = 10
-    crosshair_center = (SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2)
-    pygame.draw.circle(screen, HIGHLIGHT_COLOR, crosshair_center, crosshair_size, 2)
-    pygame.draw.line(screen, HIGHLIGHT_COLOR, (crosshair_center[0] - crosshair_size, crosshair_center[1]), (crosshair_center[0] + crosshair_size, crosshair_center[1]), 2)
-    pygame.draw.line(screen, HIGHLIGHT_COLOR, (crosshair_center[0], crosshair_center[1] - crosshair_size), (crosshair_center[0], crosshair_center[1] + crosshair_size), 2)
-    
-    # Highlight the block the crosshair is currently on
-    global selected_block_pos
-    selected_block_pos = get_selected_tile(player.rect, camera_offset_x, camera_offset_y)
-    
-    if 0 <= selected_block_pos[0] < MAP_WIDTH and 0 <= selected_block_pos[1] < MAP_HEIGHT:
-        highlight_rect = pygame.Rect(
-            selected_block_pos[0] * TILE_SIZE - camera_offset_x,
-            selected_block_pos[1] * TILE_SIZE - camera_offset_y,
-            TILE_SIZE, TILE_SIZE
-        )
-        # Draw a translucent yellow border around the selected block
-        pygame.draw.rect(screen, HIGHLIGHT_COLOR, highlight_rect, 3)
-    
-    return dig_button_rect, place_button_rect, dpad_x, dpad_y, dpad_size
-
-
-def handle_block_action(action):
-    # action is 'dig' or 'place'
-    global world_data, selected_item
-    
-    # Use the block position identified by the crosshair
-    x, y = selected_block_pos
-    
-    if 0 <= x < MAP_WIDTH and 0 <= y < MAP_HEIGHT:
-        if action == 'dig' and world_data[y][x] != AIR:
-            # Check if it's the current block we want to break (not standing on it)
-            if not player.rect.colliderect(pygame.Rect(x * TILE_SIZE, y * TILE_SIZE, TILE_SIZE, TILE_SIZE)):
-                world_data[y][x] = AIR # Break the block
-                # NOTE: In a real game, you would add the broken block to the player's inventory
-                
-        elif action == 'place' and world_data[y][x] == AIR:
-            # Check if player is not placing a block on themselves
-            if not player.rect.colliderect(pygame.Rect(x * TILE_SIZE, y * TILE_SIZE, TILE_SIZE, TILE_SIZE)):
-                world_data[y][x] = BRICK # Place a brick block (using BRICK as a placeholder for a house block)
-
-
-# --- Game Loop ---
-running = True
-while running:
-    for event in pygame.event.get():
-        if event.type == pygame.QUIT:
-            running = False
+        const { x, y } = selected;
+        const currentBlock = worldData[y][x];
         
-        # --- Handle Mobile UI Clicks (Simplified: using mouse clicks) ---
-        if event.type == pygame.MOUSEBUTTONDOWN:
-            mouse_pos = event.pos
-            
-            # Check Dig Button
-            if dig_button_rect.collidepoint(mouse_pos):
-                handle_block_action('dig')
-                
-            # Check Place Button
-            elif place_button_rect.collidepoint(mouse_pos):
-                handle_block_action('place')
-                
-            # Basic D-pad detection (just to show where the touch zone is)
-            elif pygame.Rect(dpad_x, dpad_y, dpad_size, dpad_size).collidepoint(mouse_pos):
-                # In a real game, you'd calculate the tap direction here
-                print("D-pad area tapped!")
+        // Check if the player is standing in the selected block's area
+        const playerIsInBlock = (
+            player.x < (x + 1) * TILE_SIZE &&
+            player.x + TILE_SIZE > x * TILE_SIZE &&
+            player.y < (y + 1) * TILE_SIZE &&
+            player.y + 64 > y * TILE_SIZE
+        );
 
-    # --- Player Movement (Using keyboard for now, maps to D-pad logic) ---
-    keys = pygame.key.get_pressed()
-    dx, dy = 0, 0
-    if keys[pygame.K_LEFT]:
-        dx = -1
-    if keys[pygame.K_RIGHT]:
-        dx = 1
-    if keys[pygame.K_UP]:
-        dy = -1
-    if keys[pygame.K_DOWN]:
-        dy = 1
-        
-    player.update(dx, dy)
-    
-    # --- Camera Update (Center the camera on the player) ---
-    camera_offset_x = player.rect.centerx - SCREEN_WIDTH // 2
-    camera_offset_y = player.rect.centery - SCREEN_HEIGHT // 2
-    
-    # --- Drawing ---
-    screen.fill(SKY_BLUE)
-    
-    draw_world()
-    
-    # Draw player (shifted by camera offset)
-    player_screen_rect = player.rect.move(-camera_offset_x, -camera_offset_y)
-    screen.blit(player.image, player_screen_rect)
+        if (action === 'dig' && currentBlock !== 0 && !playerIsInBlock) {
+            worldData[y][x] = 0; // Break block
+            renderWorld();
+        } else if (action === 'place' && currentBlock === 0) {
+            // Place a Brick (ID 3)
+            worldData[y][x] = 3; 
+            renderWorld();
+        }
+    }
 
-    dig_button_rect, place_button_rect, dpad_x, dpad_y, dpad_size = draw_ui() # Draw UI elements on top
-    
-    pygame.display.flip()
-    clock.tick(FPS)
+    // --- Movement Logic ---
+    let keys = {};
+    document.addEventListener('keydown', (e) => {
+        keys[e.key] = true;
+    });
 
-pygame.quit()
-sys.exit()
+    document.addEventListener('keyup', (e) => {
+        keys[e.key] = false;
+    });
+
+    function updateMovement() {
+        let dx = 0;
+        let dy = 0;
+
+        // Basic Movement (W/A/S/D or Arrow Keys)
+        if (keys['ArrowLeft'] || keys['a']) dx -= player.speed;
+        if (keys['ArrowRight'] || keys['d']) dx += player.speed;
+        // NOTE: Vertical movement is simplified, gravity/jumping is needed for a true 2D sandbox game
+        if (keys['ArrowUp'] || keys['w']) dy -= player.speed;
+        if (keys['ArrowDown'] || keys['s']) dy += player.speed;
+
+        // Apply movement
+        player.x += dx;
+        player.y += dy;
+
+        // Simple boundary check
+        player.x = Math.max(0, Math.min(player.x, MAP_WIDTH * TILE_SIZE - TILE_SIZE));
+        player.y = Math.max(0, Math.min(player.y, MAP_HEIGHT * TILE_SIZE - 64));
+    }
+
+
+    // --- Game Loop (Main heartbeat) ---
+    function gameLoop() {
+        updateMovement();
+        updateCamera();
+        getSelectedBlock(); // Continuously update crosshair position
+
+        requestAnimationFrame(gameLoop);
+    }
+
+    // --- Event Listeners for UI Buttons (Mobile Simulation) ---
+    digButton.addEventListener('click', () => handleBlockAction('dig'));
+    placeButton.addEventListener('click', () => handleBlockAction('place'));
+
+    // --- Initialization ---
+    generateWorld();
+    renderWorld();
+    gameLoop(); // Start the loop
+
+</script>
+</body>
+    </html>
