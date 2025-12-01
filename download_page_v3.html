@@ -1,182 +1,151 @@
 <!DOCTYPE html>
-<html lang="bn">
+<html>
 <head>
-<meta charset="utf-8" />
-<meta name="viewport" content="width=device-width,initial-scale=1" />
-<title>Sky Emoji Shooter — MD SIYAM KHAN</title>
+<meta charset="UTF-8">
+<title>Mini Dig & Build Game</title>
 <style>
-  html,body{margin:0;height:100%;background:linear-gradient(180deg,#000,#05060a);font-family:sans-serif;color:#fff;overflow:hidden;}
-  #gameWrap{position:relative;height:100vh;width:100vw;}
-  canvas{display:block;width:100%;height:100%;}
-  .hud{position:absolute;left:12px;top:12px;background:rgba(0,0,0,0.35);padding:8px 12px;border-radius:10px;}
-  .title{font-weight:800;font-size:14px;color:#00ff7f;}
-  .sub{font-size:12px;font-weight:700;color:#caffdb;}
-  .scoreBoard{position:absolute;left:50%;transform:translateX(-50%);top:12px;background:rgba(0,0,0,0.4);padding:8px 14px;border-radius:12px;font-weight:800}
+  body {
+    margin: 0;
+    background: #87CEEB;
+    overflow: hidden;
+  }
+
+  canvas {
+    background: #8fd18a;
+    display: block;
+    margin: 0 auto;
+  }
+
+  #ui {
+    position: fixed;
+    bottom: 0;
+    width: 100%;
+    display: flex;
+    justify-content: space-between;
+    padding: 10px;
+    box-sizing: border-box;
+  }
+
+  .btn {
+    width: 60px;
+    height: 60px;
+    background: #ffffffaa;
+    border-radius: 10px;
+    text-align: center;
+    line-height: 60px;
+    font-size: 25px;
+    font-weight: bold;
+    border: 2px solid #333;
+    user-select: none;
+  }
+
+  #blocks {
+    display: flex;
+    gap: 5px;
+  }
+
+  .block {
+    width: 40px;
+    height: 40px;
+    background: brown;
+    border: 2px solid #000;
+  }
+
+  #shovel {
+    background: #ffdd77;
+  }
 </style>
 </head>
 <body>
-<div id="gameWrap">
-  <div class="hud">
-    <div class="title">MD SIYAM KHAN</div>
-    <div class="sub" id="rollLabel">ROLL: 2</div>
+
+<canvas id="game" width="800" height="450"></canvas>
+
+<div id="ui">
+  <div id="controls">
+    <div class="btn" id="left">⬅</div>
+    <div class="btn" id="right">➡</div>
+    <div class="btn" id="up">⬆</div>
+    <div class="btn" id="down">⬇</div>
   </div>
 
-  <div class="scoreBoard" id="scoreBoard">Score: 0</div>
-
-  <canvas id="game"></canvas>
+  <div id="blocks">
+    <div class="block" data-type="brick" style="background:red;"></div>
+    <div class="block" data-type="wood" style="background:#8b4513;"></div>
+    <div class="block" data-type="stone" style="background:gray;"></div>
+    <div class="btn" id="shovel">⛏</div>
+  </div>
 </div>
 
 <script>
-const canvas = document.getElementById('game');
-const ctx = canvas.getContext('2d');
-let W = canvas.width = window.innerWidth;
-let H = canvas.height = window.innerHeight;
+const canvas = document.getElementById("game");
+const ctx = canvas.getContext("2d");
 
-window.addEventListener('resize', ()=>{ W = canvas.width = window.innerWidth; H = canvas.height = window.innerHeight; });
+let gridSize = 30;
+let rows = 15;
+let cols = 30;
 
-// game state
-let score = 0;
-let roll = 2;
-const scoreBoard = document.getElementById('scoreBoard');
-const rollLabel = document.getElementById('rollLabel');
-
-function updateLabels(){ rollLabel.innerText = 'ROLL: ' + roll; }
-updateLabels();
-
-// player
-const player = {x:W/2-40,y:H-90,w:80,h:28,speed:12};
-let pointerX = player.x + player.w/2;
-let isDown = false;
-
-// input
-canvas.addEventListener('mousedown',e=>{isDown=true;pointerX=e.clientX});
-canvas.addEventListener('mousemove',e=>{if(isDown) pointerX=e.clientX});
-window.addEventListener('mouseup',()=>isDown=false);
-canvas.addEventListener('touchstart',e=>{isDown=true;pointerX=e.touches[0].clientX; e.preventDefault()},{passive:false});
-canvas.addEventListener('touchmove',e=>{pointerX=e.touches[0].clientX; e.preventDefault()},{passive:false});
-canvas.addEventListener('touchend',()=>isDown=false);
-
-// bullets / emoji array
-let bullets = [];
-let enemies = [];
-
-function spawnEnemy(){
-  const r = 20 + Math.random()*8;
-  const x = Math.random()*(W - r*2)+r;
-  const y = -30 - Math.random()*200;
-  const spd = 1.5 + Math.random()*2.5 + Math.min(score/30,3);
-  enemies.push({x,y,r,spd});
-}
-
-// init enemies
-for(let i=0;i<6;i++) spawnEnemy();
-
-// shoot function: emoji bullets
-function shoot(){
-  const cx = player.x + player.w/2;
-  const spread = (roll===2)?18:36;
-  const count = roll;
-  for(let i=0;i<count;i++){
-    const t = (count===1)?0:(i/(count-1)-0.5);
-    const angle = -Math.PI/2 + t*(spread*Math.PI/180);
-    const speed = 6.5;
-    bullets.push({x:cx,y:player.y, vx:Math.cos(angle)*speed, vy:Math.sin(angle)*speed});
+// মাটির গ্রিড তৈরি
+let world = [];
+for (let y = 0; y < rows; y++) {
+  world[y] = [];
+  for (let x = 0; x < cols; x++) {
+    world[y][x] = y > 7 ? "dirt" : "air";
   }
 }
 
-// click/tap to shoot
-canvas.addEventListener('click',shoot);
-window.addEventListener('keydown',e=>{if(e.code==='Space') shoot()});
+// প্লেয়ার
+let player = { x: 5, y: 7 };
 
-// update function
-function update(dt){
-  const targetX = Math.max(10,Math.min(pointerX-player.w/2,W-player.w-10));
-  player.x += (targetX-player.x)*0.24;
+// নির্বাচিত ব্লক
+let selectedBlock = "brick";
 
-  // update bullets
-  for(let i=bullets.length-1;i>=0;i--){
-    const b = bullets[i];
-    b.x+=b.vx;
-    b.y+=b.vy;
-    if(b.y<-20 || b.x<-50 || b.x>W+50) bullets.splice(i,1);
+// UI Event
+document.querySelectorAll(".block").forEach(b => {
+  b.onclick = () => selectedBlock = b.dataset.type;
+});
+
+// কন্ট্রোল
+document.getElementById("left").onclick = () => player.x--;
+document.getElementById("right").onclick = () => player.x++;
+document.getElementById("up").onclick = () => player.y--;
+document.getElementById("down").onclick = () => player.y++;
+
+// খনন
+document.getElementById("shovel").onclick = () => {
+  if (world[player.y][player.x] !== "air") {
+    world[player.y][player.x] = "air";
   }
+};
 
-  // update enemies
-  for(let i=enemies.length-1;i>=0;i--){
-    const en = enemies[i];
-    en.y+=en.spd;
-    // collision
-    for(let j=bullets.length-1;j>=0;j--){
-      const b = bullets[j];
-      const dx = en.x-b.x, dy=en.y-b.y, dist=Math.sqrt(dx*dx+dy*dy);
-      if(dist < en.r + 12){ // hit
-        bullets.splice(j,1);
-        enemies.splice(i,1);
-        score+=1;
-        scoreBoard.innerText='Score: '+score;
-        // spawn 2 new enemies to simulate "split"
-        spawnEnemy();
-        spawnEnemy();
-        break;
+// গেম আঁকা
+function draw() {
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+  for (let y = 0; y < rows; y++) {
+    for (let x = 0; x < cols; x++) {
+      if (world[y][x] !== "air") {
+        ctx.fillStyle = world[y][x] === "dirt" ? "#8b5a2b" : "gray";
+        ctx.fillRect(x * gridSize, y * gridSize, gridSize, gridSize);
       }
     }
-    // enemy off screen
-    if(en && en.y-en.r>H){
-      score=Math.max(0,score-1);
-      scoreBoard.innerText='Score: '+score;
-      enemies.splice(i,1);
-      spawnEnemy();
-    }
-  }
-}
-
-// draw function
-function draw(){
-  ctx.fillStyle='#020207';
-  ctx.fillRect(0,0,W,H);
-
-  // enemies
-  for(const en of enemies){
-    ctx.fillStyle='#ffbf00';
-    ctx.beginPath(); ctx.arc(en.x,en.y,en.r,0,Math.PI*2); ctx.fill(); ctx.closePath();
-    ctx.fillStyle='#ff8c00';
-    ctx.fillRect(en.x-en.r*1.4,en.y-en.r*0.2,en.r*0.6,en.r*0.3);
-    ctx.fillRect(en.x+en.r*0.8,en.y-en.r*0.2,en.r*0.6,en.r*0.3);
   }
 
-  // bullets = emojis
-  for(const b of bullets){
-    ctx.font='22px Segoe UI';
-    ctx.textAlign='center';
-    ctx.fillText('🖕',b.x,b.y);
-  }
+  // খেলোয়াড়
+  ctx.fillStyle = "blue";
+  ctx.fillRect(player.x * gridSize, player.y * gridSize, gridSize, gridSize);
 
-  // player
-  ctx.save(); ctx.translate(player.x+player.w/2,player.y+player.h/2);
-  ctx.fillStyle='#00d166'; ctx.fillRect(-player.w/2,-player.h/2,player.w,player.h);
-  ctx.fillStyle='#001f2d'; ctx.fillRect(-12,-player.h/2,24,player.h*0.9);
-  ctx.restore();
-  // labels
-  ctx.fillStyle='#ffffff';
-  ctx.font='700 18px Segoe UI';
-  ctx.textAlign='center';
-  ctx.fillText('MD SIYAM KHAN', player.x + player.w/2, player.y-28);
-  ctx.fillStyle='#caffdb';
-  ctx.font='700 14px Segoe UI';
-  ctx.fillText('ROLL: '+roll, player.x + player.w/2, player.y-8);
+  requestAnimationFrame(draw);
 }
+draw();
 
-// game loop
-let lastTime=0;
-function loop(ts){
-  const dt=ts-lastTime; lastTime=ts;
-  update(dt); draw();
-  requestAnimationFrame(loop);
-}
-requestAnimationFrame(loop);
-
-// spawn more enemies occasionally
-setInterval(()=>{if(enemies.length<10) spawnEnemy();},900);
+// স্ক্রিনে ট্যাপ করলে বিল্ড
+canvas.addEventListener("click", (e) => {
+  let rect = canvas.getBoundingClientRect();
+  let x = Math.floor((e.clientX - rect.left) / gridSize);
+  let y = Math.floor((e.clientY - rect.top) / gridSize);
+  world[y][x] = selectedBlock;
+});
 </script>
+
 </body>
 </html>
