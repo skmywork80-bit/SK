@@ -1,157 +1,177 @@
 <!DOCTYPE html>
 <html lang="bn">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>অ্যাডভান্সড কার্টুন ক্যারেক্টার জেনারেটর</title>
+    <meta charset="utf-8">
+    <title>Minecraft-এর মতো সিম্পল গেম</title>
     <style>
-        body {
-            font-family: 'Segoe UI', Arial, sans-serif;
-            background: linear-gradient(to bottom, #a8e6cf, #dcedc1);
-            text-align: center;
-            padding: 40px;
-            margin: 0;
-            min-height: 100vh;
-        }
-        h1 {
-            color: #333;
-            margin-bottom: 10px;
-        }
-        p {
-            color: #555;
-            margin-bottom: 30px;
-        }
-        #character-container {
-            width: 350px;
-            height: 500px;
-            margin: 20px auto;
-            background: white;
-            border-radius: 20px;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
-            padding: 20px;
-            overflow: hidden;
-        }
-        svg {
-            width: 100%;
-            height: 100%;
-        }
-        button {
-            padding: 12px 30px;
-            font-size: 20px;
-            background-color: #ff6b6b;
+        body { margin: 0; overflow: hidden; }
+        #instructions {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            background: rgba(0,0,0,0.5);
             color: white;
-            border: none;
-            border-radius: 50px;
-            cursor: pointer;
-            box-shadow: 0 5px 15px rgba(255,107,107,0.4);
-            transition: 0.3s;
-        }
-        button:hover {
-            background-color: #ff5252;
-            transform: translateY(-3px);
+            padding: 10px;
+            font-family: Arial, sans-serif;
+            border-radius: 5px;
         }
     </style>
+    <script src="https://threejs.org/build/three.js"></script>
+    <script src="https://threejs.org/examples/js/controls/PointerLockControls.js"></script>
 </head>
 <body>
-    <h1>র‍্যান্ডম কার্টুন ক্যারেক্টার জেনারেটর</h1>
-    <p>বাটনে ক্লিক করে নতুন নতুন মজার চরিত্র তৈরি করুন!</p>
-    <div id="character-container">
-        <!-- SVG এখানে জেনারেট হবে -->
+    <div id="instructions">
+        ক্লিক করুন: ব্লক যোগ করুন<br>
+        Shift + ক্লিক: ব্লক রিমুভ করুন<br>
+        WASD: মুভ করুন<br>
+        মাউস: চারদিকে দেখুন (প্রথমে ক্লিক করুন)
     </div>
-    <button onclick="generateCharacter()">নতুন চরিত্র তৈরি করুন 🎲</button>
 
     <script>
-        function randomChoice(arr) {
-            return arr[Math.floor(Math.random() * arr.length)];
+        let camera, scene, renderer, controls;
+        const objects = [];
+
+        let raycaster;
+        let moveForward = false;
+        let moveBackward = false;
+        let moveLeft = false;
+        let moveRight = false;
+
+        const voxelSize = 1;
+        const cubeGeo = new THREE.BoxGeometry(voxelSize, voxelSize, voxelSize);
+        const cubeMaterial = new THREE.MeshLambertMaterial({ color: 0x00ff00 });
+
+        init();
+        animate();
+
+        function init() {
+            camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+
+            scene = new THREE.Scene();
+            scene.background = new THREE.Color(0x87ceeb);
+
+            const light = new THREE.HemisphereLight(0xffffff, 0x444444);
+            light.position.set(0, 20, 0);
+            scene.add(light);
+
+            const dirLight = new THREE.DirectionalLight(0xffffff);
+            dirLight.position.set(-3, 10, -10);
+            scene.add(dirLight);
+
+            // গ্রাউন্ড
+            const groundGeo = new THREE.PlaneGeometry(100, 100);
+            const groundMat = new THREE.MeshLambertMaterial({ color: 0x888888 });
+            const ground = new THREE.Mesh(groundGeo, groundMat);
+            ground.rotation.x = -Math.PI / 2;
+            ground.position.y = -0.5;
+            scene.add(ground);
+
+            renderer = new THREE.WebGLRenderer({ antialias: true });
+            renderer.setPixelRatio(window.devicePixelRatio);
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            document.body.appendChild(renderer.domElement);
+
+            controls = new THREE.PointerLockControls(camera, document.body);
+
+            document.body.addEventListener('click', () => {
+                controls.lock();
+            });
+
+            scene.add(controls.getObject());
+
+            // কীবোর্ড কন্ট্রোল
+            document.addEventListener('keydown', onKeyDown);
+            document.addEventListener('keyup', onKeyUp);
+
+            raycaster = new THREE.Raycaster();
+
+            // মাউস ক্লিক হ্যান্ডলার
+            document.addEventListener('mousedown', onMouseDown);
+
+            window.addEventListener('resize', onWindowResize);
         }
 
-        function generateCharacter() {
-            // কালার প্যালেট
-            const skinColors = ['#FFDBAC', '#F0B48A', '#E0AC89', '#C68642', '#8D5524'];
-            const hairColors = ['#000000', '#4B0082', '#8B4513', '#FFD700', '#FF4500', '#00CED1'];
-            const shirtColors = ['#4CAF50', '#2196F3', '#FF9800', '#9C27B0', '#F44336', '#00BCD4'];
-            const pantColors = ['#333333', '#424242', '#1A237E', '#4A148C', '#BF360C'];
-
-            const selectedSkin = randomChoice(skinColors);
-            const selectedHair = randomChoice(hairColors);
-            const selectedShirt = randomChoice(shirtColors);
-            const selectedPant = randomChoice(pantColors);
-
-            // হেয়ার স্টাইল
-            const hairStyles = [
-                // স্টাইল ১: লম্বা সোজা
-                `<path d="M40 70 Q100 10 160 70 Q170 120 150 140 Q100 160 50 140 Q30 120 40 70" fill="${selectedHair}"/>`,
-                // স্টাইল ২: ছোট কোঁকড়া
-                `<circle cx="60" cy="70" r="20" fill="${selectedHair}"/>
-                 <circle cx="100" cy="60" r="25" fill="${selectedHair}"/>
-                 <circle cx="140" cy="70" r="20" fill="${selectedHair}"/>`,
-                // স্টাইল ৩: পাঙ্ক
-                `<path d="M60 70 L70 30 L90 70 Z" fill="${selectedHair}"/>
-                 <path d="M80 70 L90 20 L110 70 Z" fill="${selectedHair}"/>
-                 <path d="M100 70 L110 40 L130 70 Z" fill="${selectedHair}"/>`,
-                // স্টাইল ৪: বব কাট
-                `<rect x="50" y="70" width="100" height="60" rx="20" fill="${selectedHair}"/>`,
-                // স্টাইল ৫: টুপি সহ
-                `<ellipse cx="100" cy="70" rx="70" ry="30" fill="${selectedHair}"/>
-                 <rect x="60" y="30" width="80" height="40" rx="10" fill="#333"/>`
-            ];
-
-            // অতিরিক্ত অ্যাকসেসরিজ (চশমা, দাড়ি ইত্যাদি)
-            let accessories = '';
-            if (Math.random() > 0.6) {
-                // চশমা
-                accessories += `
-                    <circle cx="70" cy="90" r="20" stroke="#000" stroke-width="4" fill="none"/>
-                    <circle cx="130" cy="90" r="20" stroke="#000" stroke-width="4" fill="none"/>
-                    <line x1="90" y1="90" x2="110" y2="90" stroke="#000" stroke-width="4"/>
-                `;
+        function onKeyDown(event) {
+            switch (event.code) {
+                case 'KeyW': moveForward = true; break;
+                case 'KeyS': moveBackward = true; break;
+                case 'KeyA': moveLeft = true; break;
+                case 'KeyD': moveRight = true; break;
             }
-            if (Math.random() > 0.7) {
-                // দাড়ি
-                accessories += `<path d="M70 140 Q100 170 130 140 Q130 160 70 160 Q70 140 70 140" fill="#333"/>`;
-            }
-
-            const svg = `
-                <svg viewBox="0 0 200 300">
-                    <!-- মাথা -->
-                    <circle cx="100" cy="100" r="60" fill="${selectedSkin}" stroke="#000" stroke-width="3"/>
-
-                    <!-- চুল -->
-                    ${randomChoice(hairStyles)}
-
-                    <!-- চোখ -->
-                    <circle cx="75" cy="90" r="12" fill="white"/>
-                    <circle cx="75" cy="90" r="6" fill="black"/>
-                    <circle cx="125" cy="90" r="12" fill="white"/>
-                    <circle cx="125" cy="90" r="6" fill="black"/>
-
-                    <!-- আইব্রো -->
-                    <line x1="60" y1="75" x2="90" y2="80" stroke="#000" stroke-width="4"/>
-                    <line x1="110" y1="80" x2="140" y2="75" stroke="#000" stroke-width="4"/>
-
-                    <!-- নাক -->
-                    <path d="M100 100 L90 120 L110 120 Z" fill="none" stroke="#000" stroke-width="3"/>
-
-                    <!-- মুখ (র‍্যান্ডম এক্সপ্রেশন) -->
-                    ${Math.random() > 0.5 
-                        ? '<path d="M70 130 Q100 160 130 130" stroke="#000" stroke-width="5" fill="none"/>' 
-                        : '<line x1="70" y1="140" x2="130" y2="140" stroke="#000" stroke-width="5"/>'}
-
-                    <!-- অ্যাকসেসরিজ -->
-                    ${accessories}
-
-                    <!-- গলা ও শরীর -->
-                    <rect x="80" y="150" width="40" height="30" fill="${selectedSkin}"/>
-                    <ellipse cx="100" cy="180" rx="50" ry="70" fill="${selectedShirt}"/>
-                    <rect x="50" y="240" width="100" height="60" fill="${selectedPant}" rx="10"/>
-                </svg>
-            `;
-
-            document.getElementById('character-container').innerHTML = svg;
         }
 
-        // পেজ লোড হলে প্রথম চরিত্র
-        generateCharacter();
+        function onKeyUp(event) {
+            switch (event.code) {
+                case 'KeyW': moveForward = false; break;
+                case 'KeyS': moveBackward = false; break;
+                case 'KeyA': moveLeft = false; break;
+                case 'KeyD': moveRight = false; break;
+            }
+        }
+
+        function onMouseDown(event) {
+            if (!controls.isLocked) return;
+
+            event.preventDefault();
+
+            raycaster.setFromCamera(new THREE.Vector2(0, 0), camera); // সেন্টার থেকে রে
+
+            const intersects = raycaster.intersectObjects(objects);
+
+            if (intersects.length > 0) {
+                const intersect = intersects[0];
+
+                if (event.shiftKey) {
+                    // রিমুভ ব্লক
+                    if (intersect.object !== ground) {
+                        scene.remove(intersect.object);
+                        objects.splice(objects.indexOf(intersect.object), 1);
+                    }
+                } else {
+                    // অ্যাড ব্লক
+                    const normal = intersect.face.normal.clone();
+                    normal.applyQuaternion(intersect.object.quaternion);
+
+                    const position = intersect.point.clone().add(normal.multiplyScalar(voxelSize / 2));
+                    position.x = Math.floor(position.x / voxelSize) * voxelSize + voxelSize / 2;
+                    position.y = Math.floor(position.y / voxelSize) * voxelSize + voxelSize / 2;
+                    position.z = Math.floor(position.z / voxelSize) * voxelSize + voxelSize / 2;
+
+                    const voxel = new THREE.Mesh(cubeGeo, cubeMaterial);
+                    voxel.position.copy(position);
+                    scene.add(voxel);
+                    objects.push(voxel);
+                }
+            }
+        }
+
+        function onWindowResize() {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        }
+
+        function animate() {
+            requestAnimationFrame(animate);
+
+            const delta = 0.1; // মুভমেন্ট স্পিড
+
+            if (controls.isLocked) {
+                const direction = new THREE.Vector3();
+
+                if (moveForward) direction.z -= 1;
+                if (moveBackward) direction.z += 1;
+                if (moveLeft) direction.x -= 1;
+                if (moveRight) direction.x += 1;
+
+                direction.normalize();
+                direction.applyQuaternion(controls.getObject().quaternion);
+
+                controls.getObject().position.add(direction.multiplyScalar(delta));
+            }
+
+            renderer.render(scene, camera);
+        }
     </script>
 </body>
-</html>
+    </html>
