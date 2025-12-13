@@ -1,289 +1,157 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="bn">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Web Sandbox Game</title>
+    <title>অ্যাডভান্সড কার্টুন ক্যারেক্টার জেনারেটর</title>
     <style>
-        /* CSS for basic styling */
         body {
+            font-family: 'Segoe UI', Arial, sans-serif;
+            background: linear-gradient(to bottom, #a8e6cf, #dcedc1);
+            text-align: center;
+            padding: 40px;
             margin: 0;
-            overflow: hidden; /* Hide scrollbars */
-            background-color: #87ceeb; /* Sky Blue */
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            height: 100vh;
+            min-height: 100vh;
         }
-
-        /* The main game container/world */
-        #game-container {
-            position: relative;
-            width: 800px;
-            height: 600px;
-            border: 2px solid black;
-            overflow: hidden; /* To simulate camera view */
+        h1 {
+            color: #333;
+            margin-bottom: 10px;
         }
-
-        /* Player character style */
-        #player {
-            position: absolute;
-            width: 32px;
-            height: 64px; /* Tall character */
-            background-color: black;
-            z-index: 100;
-            transition: top 0.05s linear, left 0.05s linear; /* Smooth movement visually */
+        p {
+            color: #555;
+            margin-bottom: 30px;
         }
-
-        /* Block (Tile) style */
-        .tile {
-            position: absolute;
-            width: 32px;
-            height: 32px;
-            box-sizing: border-box;
-            border: 1px solid rgba(0, 0, 0, 0.2);
+        #character-container {
+            width: 350px;
+            height: 500px;
+            margin: 20px auto;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            padding: 20px;
+            overflow: hidden;
         }
-
-        .grass {
-            background-color: #009600; /* Grass Green */
+        svg {
+            width: 100%;
+            height: 100%;
         }
-
-        .dirt {
-            background-color: #8b4513; /* Dirt Brown */
-        }
-
-        .brick {
-            background-color: #964b00; /* Brick Brown */
-        }
-
-        /* UI Styles (Simplified Mobile Controls for Web) */
-        #ui-controls {
-            position: absolute;
-            bottom: 10px;
-            right: 10px;
-            display: flex;
-            gap: 10px;
-            z-index: 200;
-        }
-
-        .ui-button {
-            width: 60px;
-            height: 60px;
-            background-color: #555;
+        button {
+            padding: 12px 30px;
+            font-size: 20px;
+            background-color: #ff6b6b;
             color: white;
-            border-radius: 50%;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            font-size: 24px;
+            border: none;
+            border-radius: 50px;
             cursor: pointer;
-            user-select: none;
-            box-shadow: 2px 2px 5px rgba(0, 0, 0, 0.5);
+            box-shadow: 0 5px 15px rgba(255,107,107,0.4);
+            transition: 0.3s;
         }
-        
-        /* Crosshair/Selection */
-        #crosshair {
-            position: absolute;
-            width: 32px;
-            height: 32px;
-            border: 2px solid yellow;
-            pointer-events: none; /* Allows clicks to pass through */
-            z-index: 150;
+        button:hover {
+            background-color: #ff5252;
+            transform: translateY(-3px);
         }
-
     </style>
 </head>
 <body>
+    <h1>র‍্যান্ডম কার্টুন ক্যারেক্টার জেনারেটর</h1>
+    <p>বাটনে ক্লিক করে নতুন নতুন মজার চরিত্র তৈরি করুন!</p>
+    <div id="character-container">
+        <!-- SVG এখানে জেনারেট হবে -->
+    </div>
+    <button onclick="generateCharacter()">নতুন চরিত্র তৈরি করুন 🎲</button>
 
-<div id="game-container">
-    <div id="player"></div>
-    <div id="crosshair"></div>
-</div>
+    <script>
+        function randomChoice(arr) {
+            return arr[Math.floor(Math.random() * arr.length)];
+        }
 
-<div id="ui-controls">
-    <div class="ui-button" id="place-button">🧱</div> <div class="ui-button" id="dig-button">⛏️</div>   </div>
+        function generateCharacter() {
+            // কালার প্যালেট
+            const skinColors = ['#FFDBAC', '#F0B48A', '#E0AC89', '#C68642', '#8D5524'];
+            const hairColors = ['#000000', '#4B0082', '#8B4513', '#FFD700', '#FF4500', '#00CED1'];
+            const shirtColors = ['#4CAF50', '#2196F3', '#FF9800', '#9C27B0', '#F44336', '#00BCD4'];
+            const pantColors = ['#333333', '#424242', '#1A237E', '#4A148C', '#BF360C'];
 
-<script>
-    // --- Game Configuration ---
-    const TILE_SIZE = 32;
-    const MAP_WIDTH = 50;
-    const MAP_HEIGHT = 50;
-    const CONTAINER_WIDTH = 800;
-    const CONTAINER_HEIGHT = 600;
+            const selectedSkin = randomChoice(skinColors);
+            const selectedHair = randomChoice(hairColors);
+            const selectedShirt = randomChoice(shirtColors);
+            const selectedPant = randomChoice(pantColors);
 
-    // --- DOM Elements ---
-    const gameContainer = document.getElementById('game-container');
-    const playerElement = document.getElementById('player');
-    const crosshairElement = document.getElementById('crosshair');
-    const digButton = document.getElementById('dig-button');
-    const placeButton = document.getElementById('place-button');
+            // হেয়ার স্টাইল
+            const hairStyles = [
+                // স্টাইল ১: লম্বা সোজা
+                `<path d="M40 70 Q100 10 160 70 Q170 120 150 140 Q100 160 50 140 Q30 120 40 70" fill="${selectedHair}"/>`,
+                // স্টাইল ২: ছোট কোঁকড়া
+                `<circle cx="60" cy="70" r="20" fill="${selectedHair}"/>
+                 <circle cx="100" cy="60" r="25" fill="${selectedHair}"/>
+                 <circle cx="140" cy="70" r="20" fill="${selectedHair}"/>`,
+                // স্টাইল ৩: পাঙ্ক
+                `<path d="M60 70 L70 30 L90 70 Z" fill="${selectedHair}"/>
+                 <path d="M80 70 L90 20 L110 70 Z" fill="${selectedHair}"/>
+                 <path d="M100 70 L110 40 L130 70 Z" fill="${selectedHair}"/>`,
+                // স্টাইল ৪: বব কাট
+                `<rect x="50" y="70" width="100" height="60" rx="20" fill="${selectedHair}"/>`,
+                // স্টাইল ৫: টুপি সহ
+                `<ellipse cx="100" cy="70" rx="70" ry="30" fill="${selectedHair}"/>
+                 <rect x="60" y="30" width="80" height="40" rx="10" fill="#333"/>`
+            ];
 
-    // --- Game State ---
-    let player = {
-        x: (MAP_WIDTH / 2) * TILE_SIZE,
-        y: (MAP_HEIGHT / 2) * TILE_SIZE - 64, // Start above the ground
-        speed: 5
-    };
-
-    let camera = {
-        x: 0,
-        y: 0
-    };
-
-    let worldData = [];
-    const blockTypes = {
-        0: 'air',
-        1: 'grass',
-        2: 'dirt',
-        3: 'brick'
-    };
-
-    // --- World Generation ---
-    function generateWorld() {
-        const surfaceLevel = MAP_HEIGHT / 2;
-        for (let y = 0; y < MAP_HEIGHT; y++) {
-            worldData[y] = [];
-            for (let x = 0; x < MAP_WIDTH; x++) {
-                if (y === surfaceLevel) {
-                    worldData[y][x] = 1; // Grass
-                } else if (y > surfaceLevel) {
-                    worldData[y][x] = 2; // Dirt
-                } else {
-                    worldData[y][x] = 0; // Air
-                }
+            // অতিরিক্ত অ্যাকসেসরিজ (চশমা, দাড়ি ইত্যাদি)
+            let accessories = '';
+            if (Math.random() > 0.6) {
+                // চশমা
+                accessories += `
+                    <circle cx="70" cy="90" r="20" stroke="#000" stroke-width="4" fill="none"/>
+                    <circle cx="130" cy="90" r="20" stroke="#000" stroke-width="4" fill="none"/>
+                    <line x1="90" y1="90" x2="110" y2="90" stroke="#000" stroke-width="4"/>
+                `;
             }
-        }
-    }
-
-    // --- Rendering Functions ---
-    function renderWorld() {
-        // Clear old tiles (for simplicity, we re-render everything)
-        // In a complex game, you'd only update visible tiles.
-        const existingTiles = gameContainer.querySelectorAll('.tile');
-        existingTiles.forEach(tile => tile.remove());
-
-        for (let y = 0; y < MAP_HEIGHT; y++) {
-            for (let x = 0; x < MAP_WIDTH; x++) {
-                const blockId = worldData[y][x];
-                if (blockId !== 0) {
-                    const tileDiv = document.createElement('div');
-                    tileDiv.classList.add('tile', blockTypes[blockId]);
-                    tileDiv.style.left = `${x * TILE_SIZE}px`;
-                    tileDiv.style.top = `${y * TILE_SIZE}px`;
-                    tileDiv.dataset.x = x;
-                    tileDiv.dataset.y = y;
-                    gameContainer.appendChild(tileDiv);
-                }
+            if (Math.random() > 0.7) {
+                // দাড়ি
+                accessories += `<path d="M70 140 Q100 170 130 140 Q130 160 70 160 Q70 140 70 140" fill="#333"/>`;
             }
+
+            const svg = `
+                <svg viewBox="0 0 200 300">
+                    <!-- মাথা -->
+                    <circle cx="100" cy="100" r="60" fill="${selectedSkin}" stroke="#000" stroke-width="3"/>
+
+                    <!-- চুল -->
+                    ${randomChoice(hairStyles)}
+
+                    <!-- চোখ -->
+                    <circle cx="75" cy="90" r="12" fill="white"/>
+                    <circle cx="75" cy="90" r="6" fill="black"/>
+                    <circle cx="125" cy="90" r="12" fill="white"/>
+                    <circle cx="125" cy="90" r="6" fill="black"/>
+
+                    <!-- আইব্রো -->
+                    <line x1="60" y1="75" x2="90" y2="80" stroke="#000" stroke-width="4"/>
+                    <line x1="110" y1="80" x2="140" y2="75" stroke="#000" stroke-width="4"/>
+
+                    <!-- নাক -->
+                    <path d="M100 100 L90 120 L110 120 Z" fill="none" stroke="#000" stroke-width="3"/>
+
+                    <!-- মুখ (র‍্যান্ডম এক্সপ্রেশন) -->
+                    ${Math.random() > 0.5 
+                        ? '<path d="M70 130 Q100 160 130 130" stroke="#000" stroke-width="5" fill="none"/>' 
+                        : '<line x1="70" y1="140" x2="130" y2="140" stroke="#000" stroke-width="5"/>'}
+
+                    <!-- অ্যাকসেসরিজ -->
+                    ${accessories}
+
+                    <!-- গলা ও শরীর -->
+                    <rect x="80" y="150" width="40" height="30" fill="${selectedSkin}"/>
+                    <ellipse cx="100" cy="180" rx="50" ry="70" fill="${selectedShirt}"/>
+                    <rect x="50" y="240" width="100" height="60" fill="${selectedPant}" rx="10"/>
+                </svg>
+            `;
+
+            document.getElementById('character-container').innerHTML = svg;
         }
-    }
 
-    function updateCamera() {
-        // Center the camera on the player
-        camera.x = player.x - CONTAINER_WIDTH / 2 + playerElement.offsetWidth / 2;
-        camera.y = player.y - CONTAINER_HEIGHT / 2 + playerElement.offsetHeight / 2;
-
-        // Apply camera offset to the game container
-        gameContainer.style.transform = `translate(${-camera.x}px, ${-camera.y}px)`;
-
-        // Update player's position (relative to the container, before transform)
-        playerElement.style.left = `${player.x}px`;
-        playerElement.style.top = `${player.y}px`;
-    }
-
-    // --- Interaction Functions ---
-    function getSelectedBlock() {
-        // Crosshair is fixed at the center of the screen
-        const crosshairCenterX = camera.x + CONTAINER_WIDTH / 2;
-        const crosshairCenterY = camera.y + CONTAINER_HEIGHT / 2;
-
-        const gridX = Math.floor(crosshairCenterX / TILE_SIZE);
-        const gridY = Math.floor(crosshairCenterY / TILE_SIZE);
-        
-        // Update crosshair visual
-        crosshairElement.style.left = `${gridX * TILE_SIZE}px`;
-        crosshairElement.style.top = `${gridY * TILE_SIZE}px`;
-
-        if (gridX >= 0 && gridX < MAP_WIDTH && gridY >= 0 && gridY < MAP_HEIGHT) {
-            return { x: gridX, y: gridY };
-        }
-        return null;
-    }
-
-    function handleBlockAction(action) {
-        const selected = getSelectedBlock();
-        if (!selected) return;
-
-        const { x, y } = selected;
-        const currentBlock = worldData[y][x];
-        
-        // Check if the player is standing in the selected block's area
-        const playerIsInBlock = (
-            player.x < (x + 1) * TILE_SIZE &&
-            player.x + TILE_SIZE > x * TILE_SIZE &&
-            player.y < (y + 1) * TILE_SIZE &&
-            player.y + 64 > y * TILE_SIZE
-        );
-
-        if (action === 'dig' && currentBlock !== 0 && !playerIsInBlock) {
-            worldData[y][x] = 0; // Break block
-            renderWorld();
-        } else if (action === 'place' && currentBlock === 0) {
-            // Place a Brick (ID 3)
-            worldData[y][x] = 3; 
-            renderWorld();
-        }
-    }
-
-    // --- Movement Logic ---
-    let keys = {};
-    document.addEventListener('keydown', (e) => {
-        keys[e.key] = true;
-    });
-
-    document.addEventListener('keyup', (e) => {
-        keys[e.key] = false;
-    });
-
-    function updateMovement() {
-        let dx = 0;
-        let dy = 0;
-
-        // Basic Movement (W/A/S/D or Arrow Keys)
-        if (keys['ArrowLeft'] || keys['a']) dx -= player.speed;
-        if (keys['ArrowRight'] || keys['d']) dx += player.speed;
-        // NOTE: Vertical movement is simplified, gravity/jumping is needed for a true 2D sandbox game
-        if (keys['ArrowUp'] || keys['w']) dy -= player.speed;
-        if (keys['ArrowDown'] || keys['s']) dy += player.speed;
-
-        // Apply movement
-        player.x += dx;
-        player.y += dy;
-
-        // Simple boundary check
-        player.x = Math.max(0, Math.min(player.x, MAP_WIDTH * TILE_SIZE - TILE_SIZE));
-        player.y = Math.max(0, Math.min(player.y, MAP_HEIGHT * TILE_SIZE - 64));
-    }
-
-
-    // --- Game Loop (Main heartbeat) ---
-    function gameLoop() {
-        updateMovement();
-        updateCamera();
-        getSelectedBlock(); // Continuously update crosshair position
-
-        requestAnimationFrame(gameLoop);
-    }
-
-    // --- Event Listeners for UI Buttons (Mobile Simulation) ---
-    digButton.addEventListener('click', () => handleBlockAction('dig'));
-    placeButton.addEventListener('click', () => handleBlockAction('place'));
-
-    // --- Initialization ---
-    generateWorld();
-    renderWorld();
-    gameLoop(); // Start the loop
-
-</script>
+        // পেজ লোড হলে প্রথম চরিত্র
+        generateCharacter();
+    </script>
 </body>
-    </html>
+</html>
