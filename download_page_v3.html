@@ -1,177 +1,26 @@
 <!DOCTYPE html>
-<html lang="bn">
+<html lang="en">
 <head>
-    <meta charset="utf-8">
-    <title>Minecraft-এর মতো সিম্পল গেম</title>
-    <style>
-        body { margin: 0; overflow: hidden; }
-        #instructions {
-            position: absolute;
-            top: 10px;
-            left: 10px;
-            background: rgba(0,0,0,0.5);
-            color: white;
-            padding: 10px;
-            font-family: Arial, sans-serif;
-            border-radius: 5px;
-        }
-    </style>
-    <script src="https://threejs.org/build/three.js"></script>
-    <script src="https://threejs.org/examples/js/controls/PointerLockControls.js"></script>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>My Link Hub</title>
+<style>
+body { font-family: Arial, sans-serif; background: #f0f0f0; padding: 20px; }
+button { margin: 10px; padding: 15px 25px; font-size: 16px; cursor: pointer; border: none; border-radius: 8px; background: #4CAF50; color: white; }
+button:hover { background: #45a049; }
+</style>
 </head>
 <body>
-    <div id="instructions">
-        ক্লিক করুন: ব্লক যোগ করুন<br>
-        Shift + ক্লিক: ব্লক রিমুভ করুন<br>
-        WASD: মুভ করুন<br>
-        মাউস: চারদিকে দেখুন (প্রথমে ক্লিক করুন)
-    </div>
+<h1>MR SEAD.X Link Hub</h1>
 
-    <script>
-        let camera, scene, renderer, controls;
-        const objects = [];
+<!-- এখানে লিঙ্ক বসানো হলো -->
+<button onclick="openLink('https://drive.google.com/drive/folders/1Hyzh0XPJujYBAQc9t00lEaJd1rBGg1fG')">My Google Drive Folder</button>
 
-        let raycaster;
-        let moveForward = false;
-        let moveBackward = false;
-        let moveLeft = false;
-        let moveRight = false;
+<script>
+function openLink(url) {
+    window.open(url, '_blank');
+}
+</script>
 
-        const voxelSize = 1;
-        const cubeGeo = new THREE.BoxGeometry(voxelSize, voxelSize, voxelSize);
-        const cubeMaterial = new THREE.MeshLambertMaterial({ color: 0x00ff00 });
-
-        init();
-        animate();
-
-        function init() {
-            camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-
-            scene = new THREE.Scene();
-            scene.background = new THREE.Color(0x87ceeb);
-
-            const light = new THREE.HemisphereLight(0xffffff, 0x444444);
-            light.position.set(0, 20, 0);
-            scene.add(light);
-
-            const dirLight = new THREE.DirectionalLight(0xffffff);
-            dirLight.position.set(-3, 10, -10);
-            scene.add(dirLight);
-
-            // গ্রাউন্ড
-            const groundGeo = new THREE.PlaneGeometry(100, 100);
-            const groundMat = new THREE.MeshLambertMaterial({ color: 0x888888 });
-            const ground = new THREE.Mesh(groundGeo, groundMat);
-            ground.rotation.x = -Math.PI / 2;
-            ground.position.y = -0.5;
-            scene.add(ground);
-
-            renderer = new THREE.WebGLRenderer({ antialias: true });
-            renderer.setPixelRatio(window.devicePixelRatio);
-            renderer.setSize(window.innerWidth, window.innerHeight);
-            document.body.appendChild(renderer.domElement);
-
-            controls = new THREE.PointerLockControls(camera, document.body);
-
-            document.body.addEventListener('click', () => {
-                controls.lock();
-            });
-
-            scene.add(controls.getObject());
-
-            // কীবোর্ড কন্ট্রোল
-            document.addEventListener('keydown', onKeyDown);
-            document.addEventListener('keyup', onKeyUp);
-
-            raycaster = new THREE.Raycaster();
-
-            // মাউস ক্লিক হ্যান্ডলার
-            document.addEventListener('mousedown', onMouseDown);
-
-            window.addEventListener('resize', onWindowResize);
-        }
-
-        function onKeyDown(event) {
-            switch (event.code) {
-                case 'KeyW': moveForward = true; break;
-                case 'KeyS': moveBackward = true; break;
-                case 'KeyA': moveLeft = true; break;
-                case 'KeyD': moveRight = true; break;
-            }
-        }
-
-        function onKeyUp(event) {
-            switch (event.code) {
-                case 'KeyW': moveForward = false; break;
-                case 'KeyS': moveBackward = false; break;
-                case 'KeyA': moveLeft = false; break;
-                case 'KeyD': moveRight = false; break;
-            }
-        }
-
-        function onMouseDown(event) {
-            if (!controls.isLocked) return;
-
-            event.preventDefault();
-
-            raycaster.setFromCamera(new THREE.Vector2(0, 0), camera); // সেন্টার থেকে রে
-
-            const intersects = raycaster.intersectObjects(objects);
-
-            if (intersects.length > 0) {
-                const intersect = intersects[0];
-
-                if (event.shiftKey) {
-                    // রিমুভ ব্লক
-                    if (intersect.object !== ground) {
-                        scene.remove(intersect.object);
-                        objects.splice(objects.indexOf(intersect.object), 1);
-                    }
-                } else {
-                    // অ্যাড ব্লক
-                    const normal = intersect.face.normal.clone();
-                    normal.applyQuaternion(intersect.object.quaternion);
-
-                    const position = intersect.point.clone().add(normal.multiplyScalar(voxelSize / 2));
-                    position.x = Math.floor(position.x / voxelSize) * voxelSize + voxelSize / 2;
-                    position.y = Math.floor(position.y / voxelSize) * voxelSize + voxelSize / 2;
-                    position.z = Math.floor(position.z / voxelSize) * voxelSize + voxelSize / 2;
-
-                    const voxel = new THREE.Mesh(cubeGeo, cubeMaterial);
-                    voxel.position.copy(position);
-                    scene.add(voxel);
-                    objects.push(voxel);
-                }
-            }
-        }
-
-        function onWindowResize() {
-            camera.aspect = window.innerWidth / window.innerHeight;
-            camera.updateProjectionMatrix();
-            renderer.setSize(window.innerWidth, window.innerHeight);
-        }
-
-        function animate() {
-            requestAnimationFrame(animate);
-
-            const delta = 0.1; // মুভমেন্ট স্পিড
-
-            if (controls.isLocked) {
-                const direction = new THREE.Vector3();
-
-                if (moveForward) direction.z -= 1;
-                if (moveBackward) direction.z += 1;
-                if (moveLeft) direction.x -= 1;
-                if (moveRight) direction.x += 1;
-
-                direction.normalize();
-                direction.applyQuaternion(controls.getObject().quaternion);
-
-                controls.getObject().position.add(direction.multiplyScalar(delta));
-            }
-
-            renderer.render(scene, camera);
-        }
-    </script>
 </body>
-    </html>
+</html>
