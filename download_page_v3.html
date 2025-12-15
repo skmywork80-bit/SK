@@ -1,84 +1,176 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Mini Post App</title>
+<title>All-in-One Learning App Prototype</title>
 <style>
-  body { font-family: Arial; padding: 20px; }
-  #adminSection, #userSection { display:none; }
-  textarea { width:100%; height:100px; }
-  .post { border:1px solid #000; padding:5px; margin:5px 0; }
+  body {
+    font-family: Arial, sans-serif;
+    margin:0;
+    padding:0;
+    background: #f0f0f0;
+  }
+  .page { display:none; padding:20px; }
+  .active { display:block; }
+  .word-card { background:#fff; padding:20px; margin-top:50px; border-radius:10px; box-shadow:0 0 10px rgba(0,0,0,0.2);}
+  .btn { padding:10px 20px; margin:10px 0; cursor:pointer; border:none; border-radius:5px; }
+  .btn-primary { background:#007bff; color:white; }
+  .btn-danger { background:#dc3545; color:white; }
+  input { padding:8px; margin:10px 0; width:100%; }
+  .nav-btn { position:fixed; top:10px; right:10px; padding:10px; background:#333; color:white; border:none; border-radius:5px; cursor:pointer;}
 </style>
 </head>
 <body>
 
-<h2>Mini Post App</h2>
-
-<!-- Login -->
-<div id="login">
-  <input type="password" id="adminPass" placeholder="Admin Password">
-  <button onclick="login()">Login</button>
+<!-- Page 1: Word Learning -->
+<div id="pageWord" class="page active">
+  <div class="word-card">
+    <h2 id="wordText">Look (লুক)</h2>
+    <p id="wordMeaning">দেখা</p>
+    <p id="wordExample">Example: Don't look at me (আমার দিকে তাকাবে না)</p>
+    <button id="changeWordBtn" class="btn btn-primary">শব্দ পরিবর্তন</button>
+  </div>
 </div>
 
-<!-- Admin Section -->
-<div id="adminSection">
-  <h3>Create Post</h3>
-  <textarea id="postText"></textarea><br>
-  <button onclick="createPost()">Post</button>
+<!-- Password Overlay -->
+<div id="passwordOverlay" class="page">
+  <h3>Enter Password</h3>
+  <input type="password" id="passwordInput" placeholder="Password">
+  <button id="passwordSubmit" class="btn btn-primary">Submit</button>
 </div>
 
-<!-- User Section -->
-<div id="userSection">
+<!-- Admin Page -->
+<div id="adminPage" class="page">
+  <h2>Admin Dashboard</h2>
+  <button id="editAppBtn" class="btn btn-primary">App Edit</button>
+  <button id="myAccountsBtn" class="btn btn-primary">My Accounts</button>
+</div>
+
+<!-- Edit App Page -->
+<div id="editAppPage" class="page">
+  <h2>Edit App (10 Tabs)</h2>
+  <p>এখানে নতুন পোস্ট, social links ইত্যাদি manage করা যাবে।</p>
+  <button class="btn btn-danger" onclick="goHome()">Home</button>
+</div>
+
+<!-- My Accounts Page -->
+<div id="myAccountsPage" class="page">
+  <h2>My Accounts</h2>
+  <button id="socialLinksBtn" class="btn btn-primary">Social Links</button>
+  <button id="postsBtn" class="btn btn-primary">Posts</button>
+  <button class="btn btn-danger" onclick="goHome()">Home</button>
+</div>
+
+<!-- Social Links Page -->
+<div id="socialLinksPage" class="page">
+  <h3>Social Links</h3>
+  <ul id="socialList"></ul>
+  <button class="btn btn-danger" onclick="goHome()">Home</button>
+</div>
+
+<!-- Posts Page -->
+<div id="postsPage" class="page">
   <h3>Posts</h3>
-  <div id="postsContainer"></div>
+  <ul id="postsList"></ul>
+  <button class="btn btn-danger" onclick="goHome()">Home</button>
 </div>
 
 <script>
-const ADMIN_PASSWORD = "admin123"; // change as needed
-let isAdmin = false;
+// ================= Word Data =================
+let words = [
+  {word:"Look", meaning:"দেখা", example:"Don't look at me (আমার দিকে তাকাবে না)"},
+  {word:"Eat", meaning:"খাওয়া", example:"Eat your food (তোমার খাবার খাও)"},
+  {word:"Run", meaning:"দৌড়ানো", example:"Run fast (দ্রুত দৌড়াও)"}
+];
+let currentWord = 0;
 
-// Login
-function login(){
-  const pass = document.getElementById('adminPass').value;
-  if(pass === ADMIN_PASSWORD){
-    isAdmin = true;
-    document.getElementById('login').style.display = 'none';
-    document.getElementById('adminSection').style.display = 'block';
-    document.getElementById('userSection').style.display = 'block';
-    loadPosts();
+// ================= Long Press Password =================
+const changeBtn = document.getElementById('changeWordBtn');
+const passwordOverlay = document.getElementById('passwordOverlay');
+const passwordInput = document.getElementById('passwordInput');
+const passwordSubmit = document.getElementById('passwordSubmit');
+
+let longPressTimer;
+const mainPassword = "1234"; // <-- Main password for Admin
+
+changeBtn.addEventListener('mousedown', () => {
+  longPressTimer = setTimeout(() => {
+    passwordOverlay.classList.add('active');
+    hideAllPages();
+  }, 3000); // 3 seconds long press
+});
+
+changeBtn.addEventListener('mouseup', () => clearTimeout(longPressTimer));
+changeBtn.addEventListener('mouseleave', () => clearTimeout(longPressTimer));
+
+// ================= Word Change =================
+changeBtn.addEventListener('click', () => {
+  currentWord = (currentWord + 1) % words.length;
+  updateWord();
+});
+
+function updateWord(){
+  document.getElementById('wordText').innerText = words[currentWord].word + " ("+words[currentWord].word.toLowerCase()+")";
+  document.getElementById('wordMeaning').innerText = words[currentWord].meaning;
+  document.getElementById('wordExample').innerText = words[currentWord].example;
+}
+
+// ================= Password Submit =================
+passwordSubmit.addEventListener('click', () => {
+  if(passwordInput.value === mainPassword){
+    hideAllPages();
+    document.getElementById('adminPage').classList.add('active');
+    passwordInput.value = "";
   } else {
-    alert("Wrong password. You are user.");
-    document.getElementById('login').style.display = 'none';
-    document.getElementById('userSection').style.display = 'block';
-    loadPosts();
+    alert("Incorrect Password!");
   }
+});
+
+// ================= Navigation =================
+function goHome(){
+  hideAllPages();
+  document.getElementById('pageWord').classList.add('active');
 }
 
-// Create post
-function createPost(){
-  const text = document.getElementById('postText').value.trim();
-  if(text === "") return;
-  let posts = JSON.parse(localStorage.getItem('posts')||'[]');
-  posts.unshift({text:text, time:Date.now()});
-  localStorage.setItem('posts', JSON.stringify(posts));
-  document.getElementById('postText').value = '';
-  loadPosts();
+function hideAllPages(){
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
 }
 
-// Load posts
-function loadPosts(){
-  let posts = JSON.parse(localStorage.getItem('posts')||'[]');
-  const container = document.getElementById('postsContainer');
-  container.innerHTML = '';
-  posts.forEach(p=>{
-    const div = document.createElement('div');
-    div.className = 'post';
-    div.textContent = p.text;
-    container.appendChild(div);
-  });
-}
+// ================= Admin Buttons =================
+document.getElementById('editAppBtn').addEventListener('click', () => {
+  let editPassword = prompt("Enter Edit Password:");
+  if(editPassword === "edit123"){
+    hideAllPages();
+    document.getElementById('editAppPage').classList.add('active');
+  } else alert("Wrong Password!");
+});
+
+document.getElementById('myAccountsBtn').addEventListener('click', () => {
+  let accountPassword = prompt("Enter My Accounts Password:");
+  if(accountPassword === "account123"){
+    hideAllPages();
+    document.getElementById('myAccountsPage').classList.add('active');
+  } else alert("Wrong Password!");
+});
+
+// ================= My Accounts Buttons =================
+document.getElementById('socialLinksBtn').addEventListener('click', () => {
+  hideAllPages();
+  document.getElementById('socialLinksPage').classList.add('active');
+  const list = document.getElementById('socialList');
+  list.innerHTML = "<li>Facebook</li><li>YouTube</li><li>TikTok</li>";
+});
+
+document.getElementById('postsBtn').addEventListener('click', () => {
+  hideAllPages();
+  document.getElementById('postsPage').classList.add('active');
+  const list = document.getElementById('postsList');
+  list.innerHTML = "<li>Post 1</li><li>Post 2</li><li>Post 3</li>";
+});
+
+updateWord(); // initial word
 </script>
-
 </body>
 </html>
