@@ -3,95 +3,81 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>OUTLINEO</title>
+<title>Mini Post App</title>
 <style>
-  body { font-family: Arial, sans-serif; margin:0; text-align:center; background:#f0f0f0; }
-  #splash { position:fixed; width:100%; height:100%; background:#000; color:#fff; display:flex; justify-content:center; align-items:center; font-size:2em; flex-direction:column; }
-  #main { display:none; padding:20px; }
-  canvas { border:1px solid #000; margin-top:10px; max-width:90%; }
-  button { padding:10px 20px; margin:10px; font-size:1em; cursor:pointer; }
+  body { font-family: Arial; padding: 20px; }
+  #adminSection, #userSection { display:none; }
+  textarea { width:100%; height:100px; }
+  .post { border:1px solid #000; padding:5px; margin:5px 0; }
 </style>
 </head>
 <body>
 
-<div id="splash">
-  <div>WELCOME</div>
-  <div>OUTLINEO</div>
+<h2>Mini Post App</h2>
+
+<!-- Login -->
+<div id="login">
+  <input type="password" id="adminPass" placeholder="Admin Password">
+  <button onclick="login()">Login</button>
 </div>
 
-<div id="namePage" style="display:none;">
-  <h2>Enter Your Name</h2>
-  <input type="text" id="userName" placeholder="Your name" />
-  <button onclick="enterMain()">Submit</button>
+<!-- Admin Section -->
+<div id="adminSection">
+  <h3>Create Post</h3>
+  <textarea id="postText"></textarea><br>
+  <button onclick="createPost()">Post</button>
 </div>
 
-<div id="main">
-  <h2>Upload Image to Convert to Outline</h2>
-  <input type="file" id="imgUpload" accept="image/*" />
-  <br>
-  <canvas id="canvas"></canvas>
-  <br>
-  <button id="downloadBtn">Download Outline</button>
+<!-- User Section -->
+<div id="userSection">
+  <h3>Posts</h3>
+  <div id="postsContainer"></div>
 </div>
 
 <script>
-  // Splash Screen
-  setTimeout(() => {
-    document.getElementById('splash').style.display = 'none';
-    document.getElementById('namePage').style.display = 'block';
-  }, 2000); // 2 seconds
+const ADMIN_PASSWORD = "admin123"; // change as needed
+let isAdmin = false;
 
-  function enterMain() {
-    let name = document.getElementById('userName').value.trim();
-    if(name !== "") {
-      document.getElementById('namePage').style.display = 'none';
-      document.getElementById('main').style.display = 'block';
-    } else {
-      alert("Please enter your name");
-    }
+// Login
+function login(){
+  const pass = document.getElementById('adminPass').value;
+  if(pass === ADMIN_PASSWORD){
+    isAdmin = true;
+    document.getElementById('login').style.display = 'none';
+    document.getElementById('adminSection').style.display = 'block';
+    document.getElementById('userSection').style.display = 'block';
+    loadPosts();
+  } else {
+    alert("Wrong password. You are user.");
+    document.getElementById('login').style.display = 'none';
+    document.getElementById('userSection').style.display = 'block';
+    loadPosts();
   }
+}
 
-  const uploadInput = document.getElementById('imgUpload');
-  const canvas = document.getElementById('canvas');
-  const ctx = canvas.getContext('2d');
+// Create post
+function createPost(){
+  const text = document.getElementById('postText').value.trim();
+  if(text === "") return;
+  let posts = JSON.parse(localStorage.getItem('posts')||'[]');
+  posts.unshift({text:text, time:Date.now()});
+  localStorage.setItem('posts', JSON.stringify(posts));
+  document.getElementById('postText').value = '';
+  loadPosts();
+}
 
-  uploadInput.addEventListener('change', (e) => {
-    const file = e.target.files[0];
-    if(file) {
-      const img = new Image();
-      img.onload = () => {
-        canvas.width = img.width;
-        canvas.height = img.height;
-        ctx.drawImage(img,0,0);
-        convertToOutline();
-      }
-      img.src = URL.createObjectURL(file);
-    }
+// Load posts
+function loadPosts(){
+  let posts = JSON.parse(localStorage.getItem('posts')||'[]');
+  const container = document.getElementById('postsContainer');
+  container.innerHTML = '';
+  posts.forEach(p=>{
+    const div = document.createElement('div');
+    div.className = 'post';
+    div.textContent = p.text;
+    container.appendChild(div);
   });
-
-  function convertToOutline() {
-    const imageData = ctx.getImageData(0,0,canvas.width,canvas.height);
-    const data = imageData.data;
-
-    // Simple Edge Detection (grayscale + threshold)
-    for(let i=0; i<data.length; i+=4){
-      const avg = (data[i]+data[i+1]+data[i+2])/3;
-      const threshold = avg < 128 ? 0 : 255;
-      data[i] = data[i+1] = data[i+2] = threshold;
-      data[i+3] = 255; // alpha
-    }
-
-    ctx.putImageData(imageData,0,0);
-  }
-
-  // Download Button
-  const downloadBtn = document.getElementById('downloadBtn');
-  downloadBtn.addEventListener('click', () => {
-    const link = document.createElement('a');
-    link.download = 'outline.png';
-    link.href = canvas.toDataURL();
-    link.click();
-  });
+}
 </script>
 
 </body>
