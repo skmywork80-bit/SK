@@ -1,200 +1,149 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-<meta charset="UTF-8">
-<title>Word Learning App</title>
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<style>
-body {
-  margin: 0;
-  font-family: Arial, sans-serif;
-  background: #f4f6fa;
-}
-header {
-  padding: 12px;
-  background: #111;
-  color: white;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-.pin {
-  cursor: pointer;
-  font-size: 22px;
-}
-.page {
-  display: none;
-  padding: 20px;
-}
-.active {
-  display: block;
-}
-.card {
-  background: white;
-  padding: 20px;
-  border-radius: 12px;
-  box-shadow: 0 10px 20px rgba(0,0,0,0.1);
-}
-button {
-  padding: 10px;
-  margin: 8px 0;
-  width: 100%;
-  border: none;
-  border-radius: 8px;
-  background: #111;
-  color: white;
-  font-size: 16px;
-}
-input {
-  width: 100%;
-  padding: 10px;
-  margin: 8px 0;
-  border-radius: 6px;
-  border: 1px solid #ccc;
-}
-.nav {
-  display: flex;
-  gap: 10px;
-}
-.small-btn {
-  width: auto;
-  padding: 8px 12px;
-}
-</style>
-</head>
+import 'package:flutter/material.dart';
 
-<body>
-
-<header>
-  <div>English Words</div>
-  <div class="pin" onclick="openMainPassword()">📍</div>
-</header>
-
-<!-- WORD PAGE -->
-<div id="wordPage" class="page active">
-  <div class="card">
-    <h2>Look (লুক)</h2>
-    <p><b>Meaning:</b> দেখা / তাকানো</p>
-    <p><b>Example:</b> Don't look at me. <br>(আমার দিকে তাকাবে না)</p>
-    <button onclick="changeWord()">শব্দ পরিবর্তন</button>
-  </div>
-</div>
-
-<!-- MAIN PASSWORD -->
-<div id="mainPassPage" class="page">
-  <div class="card">
-    <h3>Enter Password</h3>
-    <input id="mainPass" type="password">
-    <button onclick="checkMainPass()">Enter</button>
-  </div>
-</div>
-
-<!-- ADMIN GATE -->
-<div id="adminPage" class="page">
-  <div class="nav">
-    <button class="small-btn" onclick="goHome()">🏠</button>
-  </div>
-  <button onclick="openEditPass()">App Edit</button>
-  <button onclick="openAccPass()">My Accounts</button>
-</div>
-
-<!-- APP EDIT PASSWORD -->
-<div id="editPassPage" class="page">
-  <input id="editPass" type="password" placeholder="App Edit Password">
-  <button onclick="checkEditPass()">Enter</button>
-</div>
-
-<!-- APP EDIT PAGE -->
-<div id="editPage" class="page">
-  <div class="nav">
-    <button class="small-btn" onclick="back()">⬅</button>
-    <button class="small-btn" onclick="goHome()">🏠</button>
-  </div>
-  <h3>App Edit Panel</h3>
-  <button>Change Main Password</button>
-  <button>Change Edit Password</button>
-  <button>Change Accounts Password</button>
-  <button>Add New Post</button>
-  <button>Upload Image</button>
-  <button>Theme Color</button>
-  <button>Layout Style</button>
-  <button>Social Links Edit</button>
-  <button>Visibility Settings</button>
-  <button>Future Option</button>
-</div>
-
-<!-- ACCOUNT PASSWORD -->
-<div id="accPassPage" class="page">
-  <input id="accPass" type="password" placeholder="Accounts Password">
-  <button onclick="checkAccPass()">Enter</button>
-</div>
-
-<!-- ACCOUNTS PAGE -->
-<div id="accountsPage" class="page">
-  <div class="nav">
-    <button class="small-btn" onclick="back()">⬅</button>
-    <button class="small-btn" onclick="goHome()">🏠</button>
-  </div>
-  <button onclick="showLinks()">My Social Links</button>
-  <button onclick="showPosts()">Posts</button>
-  <div id="accContent"></div>
-</div>
-
-<script>
-let pages = document.querySelectorAll('.page');
-let historyStack = [];
-
-let passwords = {
-  main: "2468",
-  edit: "edit246",
-  acc: "acc246"
-};
-
-function show(id){
-  pages.forEach(p=>p.classList.remove('active'));
-  document.getElementById(id).classList.add('active');
-  historyStack.push(id);
+void main() {
+  runApp(MyApp());
 }
 
-function back(){
-  historyStack.pop();
-  show(historyStack.pop());
+class MyApp extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return MaterialApp(
+      debugShowCheckedModeBanner: false,
+      title: 'Word Learning App',
+      theme: ThemeData(primarySwatch: Colors.blue),
+      home: WordPage(),
+    );
+  }
 }
 
-function goHome(){
-  historyStack = [];
-  show('wordPage');
+// --- প্রথম পেজ: শব্দের তালিকা দেখাবে ---
+class WordPage extends StatelessWidget {
+  final List<Map<String, String>> words = [
+    {
+      'word': 'Look',
+      'pronunciation': 'লুক',
+      'meaning': 'দেখা',
+      'example': "Don't look at me (আমার দিকে তাকাবে না)"
+    },
+    {
+      'word': 'Go',
+      'pronunciation': 'গো',
+      'meaning': 'যাওয়া',
+      'example': "Go to school (স্কুলে যাও)"
+    },
+    // আরও শব্দ এখানে যুক্ত করতে পারো
+  ];
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: Text('Word List')),
+      body: ListView.builder(
+        itemCount: words.length,
+        itemBuilder: (context, index) {
+          var word = words[index];
+          return Card(
+            margin: EdgeInsets.all(8),
+            child: ListTile(
+              title: Text('${word['word']} (${word['pronunciation']})'),
+              subtitle: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text('Meaning: ${word['meaning']}'),
+                  Text('Example: ${word['example']}'),
+                ],
+              ),
+              trailing: IconButton(
+                icon: Icon(Icons.push_pin),
+                onPressed: () {
+                  // পিনে ক্লিক → পাসওয়ার্ড চাওয়া হবে
+                  showDialog(
+                    context: context,
+                    builder: (context) => PasswordDialog(),
+                  );
+                },
+              ),
+            ),
+          );
+        },
+      ),
+    );
+  }
 }
 
-function openMainPassword(){ show('mainPassPage'); }
-function checkMainPass(){
-  if(mainPass.value === passwords.main) show('adminPage');
-  else alert("Wrong Password");
+// --- পাসওয়ার্ড ডায়ালগ ---
+class PasswordDialog extends StatefulWidget {
+  @override
+  _PasswordDialogState createState() => _PasswordDialogState();
 }
 
-function openEditPass(){ show('editPassPage'); }
-function checkEditPass(){
-  if(editPass.value === passwords.edit) show('editPage');
-  else alert("Wrong Password");
+class _PasswordDialogState extends State<PasswordDialog> {
+  final _controller = TextEditingController();
+  final String correctPassword = '1234'; // ডেমো পাসওয়ার্ড
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: Text('Enter Password'),
+      content: TextField(
+        controller: _controller,
+        obscureText: true,
+        decoration: InputDecoration(hintText: 'Password'),
+      ),
+      actions: [
+        TextButton(
+          child: Text('Cancel'),
+          onPressed: () => Navigator.pop(context),
+        ),
+        TextButton(
+          child: Text('Submit'),
+          onPressed: () {
+            if (_controller.text == correctPassword) {
+              Navigator.pop(context);
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => AdminOptionsPage()),
+              );
+            } else {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(content: Text('Incorrect Password')),
+              );
+            }
+          },
+        ),
+      ],
+    );
+  }
 }
 
-function openAccPass(){ show('accPassPage'); }
-function checkAccPass(){
-  if(accPass.value === passwords.acc) show('accountsPage');
-  else alert("Wrong Password");
+// --- অ্যাডমিন অপশন পেজ ---
+class AdminOptionsPage extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: Text('Admin Options')),
+      body: Padding(
+        padding: EdgeInsets.all(16),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            ElevatedButton(
+              child: Text('Edit App'),
+              onPressed: () {
+                // Edit App functionality এখানে যুক্ত হবে
+              },
+            ),
+            SizedBox(height: 20),
+            ElevatedButton(
+              child: Text('My Accounts'),
+              onPressed: () {
+                // My Accounts functionality এখানে যুক্ত হবে
+              },
+            ),
+          ],
+        ),
+      ),
+    );
+  }
 }
 
-function showLinks(){
-  accContent.innerHTML = "<p>Facebook, YouTube, TikTok</p>";
-}
-function showPosts(){
-  accContent.innerHTML = "<p>Your posts will appear here</p>";
-}
-
-function changeWord(){
-  alert("নতুন শব্দ আসবে (ডেমো)");
-}
-</script>
-
-</body>
-  </html>
