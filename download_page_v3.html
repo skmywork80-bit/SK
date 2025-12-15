@@ -1,149 +1,179 @@
-import 'package:flutter/material.dart';
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>All-in-One Word & Social App</title>
+<style>
+    body { font-family: Arial, sans-serif; background: #f0f4f7; padding: 20px; }
+    h1 { text-align:center; }
+    .card { background: #fff; border-radius: 8px; padding: 15px; margin-bottom: 15px; box-shadow: 0 3px 6px rgba(0,0,0,0.1);}
+    .word { font-weight: bold; font-size: 20px; color: #000; }
+    .meaning { color: red; margin-top: 5px; }
+    .example { margin-top: 5px; font-style: italic; }
+    .pin-btn { float: right; cursor: pointer; color: blue; font-size: 18px; }
+    .admin-options, .edit-app, .my-accounts { display:none; margin-top: 20px; }
+    button { padding: 10px 15px; margin: 10px 0; cursor:pointer; border:none; border-radius:5px; background:#007bff; color:#fff; font-weight:bold;}
+    input[type=text], input[type=password] { padding:8px; margin:5px 0; width:100%; border-radius:5px; border:1px solid #ccc;}
+    .post-card { background:#e6f2ff; padding:10px; margin-bottom:10px; border-radius:5px; }
+    .social-link-card { background:#fff0f5; padding:10px; margin-bottom:10px; border-radius:5px; }
+    .back-btn { background:#555; }
+</style>
+</head>
+<body>
 
-void main() {
-  runApp(MyApp());
+<h1>Word Learning & Social App</h1>
+
+<!-- Word List -->
+<div id="wordList">
+    <div class="card">
+        <span class="word">Look (লুক)</span>
+        <span class="pin-btn" onclick="showPasswordPrompt()">📌</span>
+        <div class="meaning">Meaning: দেখা</div>
+        <div class="example">Example: Don't look at me (আমার দিকে তাকাবে না)</div>
+    </div>
+    <div class="card">
+        <span class="word">Go (গো)</span>
+        <span class="pin-btn" onclick="showPasswordPrompt()">📌</span>
+        <div class="meaning">Meaning: যাওয়া</div>
+        <div class="example">Example: Go to school (স্কুলে যাও)</div>
+    </div>
+</div>
+
+<!-- Admin Options -->
+<div class="admin-options" id="adminOptions">
+    <button onclick="openEditApp()">Edit App</button>
+    <button onclick="openMyAccounts()">My Accounts</button>
+</div>
+
+<!-- Edit App Section -->
+<div class="edit-app" id="editAppSection">
+    <button class="back-btn" onclick="goHome()">Home</button>
+    <h2>Edit App</h2>
+    <h3>Change Password</h3>
+    <input type="password" id="newAdminPassword" placeholder="Enter new admin password">
+    <button onclick="changeAdminPassword()">Change Password</button>
+
+    <h3>Create Post</h3>
+    <input type="text" id="postTitle" placeholder="Post Title">
+    <input type="text" id="postContent" placeholder="Post Content">
+    <input type="file" id="postImage">
+    <button onclick="createPost()">Add Post</button>
+    <div id="postList"></div>
+
+    <h3>Add Social Link</h3>
+    <input type="text" id="socialTitle" placeholder="Social Link Title">
+    <input type="text" id="socialLink" placeholder="Link or username">
+    <input type="file" id="socialThumb">
+    <button onclick="addSocialLink()">Add Social Link</button>
+    <div id="socialList"></div>
+</div>
+
+<!-- My Accounts Section -->
+<div class="my-accounts" id="myAccountsSection">
+    <button class="back-btn" onclick="goHome()">Home</button>
+    <h2>My Accounts</h2>
+    <h3>Change Account Password</h3>
+    <input type="password" id="accountPassword" placeholder="New Account Password">
+    <button onclick="changeAccountPassword()">Change Account Password</button>
+    <h3>Account List</h3>
+    <div id="accountList">
+        <p>No accounts yet.</p>
+    </div>
+</div>
+
+<script>
+let adminPassword = "1234";
+let accountPassword = "abcd";
+
+function showPasswordPrompt(){
+    let pwd = prompt("Enter Admin Password:");
+    if(pwd === adminPassword){
+        document.getElementById('adminOptions').style.display = 'block';
+        alert("Admin Options unlocked!");
+    } else {
+        alert("Incorrect Password!");
+    }
 }
 
-class MyApp extends StatelessWidget {
-  @override
-  Widget build(BuildContext context) {
-    return MaterialApp(
-      debugShowCheckedModeBanner: false,
-      title: 'Word Learning App',
-      theme: ThemeData(primarySwatch: Colors.blue),
-      home: WordPage(),
-    );
-  }
+function openEditApp(){
+    hideAllSections();
+    document.getElementById('editAppSection').style.display = 'block';
 }
 
-// --- প্রথম পেজ: শব্দের তালিকা দেখাবে ---
-class WordPage extends StatelessWidget {
-  final List<Map<String, String>> words = [
-    {
-      'word': 'Look',
-      'pronunciation': 'লুক',
-      'meaning': 'দেখা',
-      'example': "Don't look at me (আমার দিকে তাকাবে না)"
-    },
-    {
-      'word': 'Go',
-      'pronunciation': 'গো',
-      'meaning': 'যাওয়া',
-      'example': "Go to school (স্কুলে যাও)"
-    },
-    // আরও শব্দ এখানে যুক্ত করতে পারো
-  ];
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: Text('Word List')),
-      body: ListView.builder(
-        itemCount: words.length,
-        itemBuilder: (context, index) {
-          var word = words[index];
-          return Card(
-            margin: EdgeInsets.all(8),
-            child: ListTile(
-              title: Text('${word['word']} (${word['pronunciation']})'),
-              subtitle: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text('Meaning: ${word['meaning']}'),
-                  Text('Example: ${word['example']}'),
-                ],
-              ),
-              trailing: IconButton(
-                icon: Icon(Icons.push_pin),
-                onPressed: () {
-                  // পিনে ক্লিক → পাসওয়ার্ড চাওয়া হবে
-                  showDialog(
-                    context: context,
-                    builder: (context) => PasswordDialog(),
-                  );
-                },
-              ),
-            ),
-          );
-        },
-      ),
-    );
-  }
+function openMyAccounts(){
+    hideAllSections();
+    document.getElementById('myAccountsSection').style.display = 'block';
 }
 
-// --- পাসওয়ার্ড ডায়ালগ ---
-class PasswordDialog extends StatefulWidget {
-  @override
-  _PasswordDialogState createState() => _PasswordDialogState();
+function goHome(){
+    hideAllSections();
+    document.getElementById('wordList').style.display = 'block';
 }
 
-class _PasswordDialogState extends State<PasswordDialog> {
-  final _controller = TextEditingController();
-  final String correctPassword = '1234'; // ডেমো পাসওয়ার্ড
-
-  @override
-  Widget build(BuildContext context) {
-    return AlertDialog(
-      title: Text('Enter Password'),
-      content: TextField(
-        controller: _controller,
-        obscureText: true,
-        decoration: InputDecoration(hintText: 'Password'),
-      ),
-      actions: [
-        TextButton(
-          child: Text('Cancel'),
-          onPressed: () => Navigator.pop(context),
-        ),
-        TextButton(
-          child: Text('Submit'),
-          onPressed: () {
-            if (_controller.text == correctPassword) {
-              Navigator.pop(context);
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (context) => AdminOptionsPage()),
-              );
-            } else {
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(content: Text('Incorrect Password')),
-              );
-            }
-          },
-        ),
-      ],
-    );
-  }
+function hideAllSections(){
+    document.getElementById('wordList').style.display = 'none';
+    document.getElementById('adminOptions').style.display = 'none';
+    document.getElementById('editAppSection').style.display = 'none';
+    document.getElementById('myAccountsSection').style.display = 'none';
 }
 
-// --- অ্যাডমিন অপশন পেজ ---
-class AdminOptionsPage extends StatelessWidget {
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: Text('Admin Options')),
-      body: Padding(
-        padding: EdgeInsets.all(16),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            ElevatedButton(
-              child: Text('Edit App'),
-              onPressed: () {
-                // Edit App functionality এখানে যুক্ত হবে
-              },
-            ),
-            SizedBox(height: 20),
-            ElevatedButton(
-              child: Text('My Accounts'),
-              onPressed: () {
-                // My Accounts functionality এখানে যুক্ত হবে
-              },
-            ),
-          ],
-        ),
-      ),
-    );
-  }
+// Edit App Functions
+function changeAdminPassword(){
+    let newPwd = document.getElementById('newAdminPassword').value;
+    if(newPwd) { adminPassword = newPwd; alert("Admin password changed!"); }
+    else alert("Enter a valid password.");
 }
 
+function createPost(){
+    let title = document.getElementById('postTitle').value;
+    let content = document.getElementById('postContent').value;
+    let img = document.getElementById('postImage').files[0];
+    if(!title && !content && !img){ alert("Provide title, content or image."); return; }
+    let div = document.createElement('div');
+    div.className = 'post-card';
+    div.innerHTML = `<h4>${title}</h4><p>${content}</p>`;
+    if(img){
+        let reader = new FileReader();
+        reader.onload = function(e){
+            let imgEl = document.createElement('img');
+            imgEl.src = e.target.result;
+            imgEl.style.width = '100px';
+            div.appendChild(imgEl);
+        }
+        reader.readAsDataURL(img);
+    }
+    document.getElementById('postList').appendChild(div);
+}
+
+function addSocialLink(){
+    let title = document.getElementById('socialTitle').value;
+    let link = document.getElementById('socialLink').value;
+    let thumb = document.getElementById('socialThumb').files[0];
+    if(!title && !link && !thumb){ alert("Provide at least title, link, or thumbnail."); return; }
+    let div = document.createElement('div');
+    div.className = 'social-link-card';
+    div.innerHTML = `<h4>${title}</h4><p>${link}</p>`;
+    if(thumb){
+        let reader = new FileReader();
+        reader.onload = function(e){
+            let imgEl = document.createElement('img');
+            imgEl.src = e.target.result;
+            imgEl.style.width = '100px';
+            div.appendChild(imgEl);
+        }
+        reader.readAsDataURL(thumb);
+    }
+    document.getElementById('socialList').appendChild(div);
+}
+
+// My Accounts Functions
+function changeAccountPassword(){
+    let newPwd = document.getElementById('accountPassword').value;
+    if(newPwd){ accountPassword = newPwd; alert("Account password changed!"); }
+    else alert("Enter valid password.");
+}
+</script>
+
+</body>
+  </html>
