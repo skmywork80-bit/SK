@@ -3,131 +3,95 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Black City App</title>
+<title>OUTLINEO</title>
 <style>
-    body {
-        font-family: Arial, sans-serif;
-        margin: 0;
-        padding: 0;
-        background-color: #000;
-        color: #fff;
-        text-align: center;
-    }
-    #loader {
-        position: fixed;
-        top:0;
-        left:0;
-        width:100%;
-        height:100%;
-        background-color:#000;
-        display:flex;
-        justify-content:center;
-        align-items:center;
-        flex-direction: column;
-        font-size: 30px;
-        z-index: 1000;
-    }
-    #app {
-        display: none;
-        padding: 20px;
-    }
-    button {
-        display: block;
-        margin: 10px auto;
-        padding: 15px 30px;
-        font-size: 18px;
-        cursor: pointer;
-        background-color: #222;
-        color: #fff;
-        border: none;
-        border-radius: 8px;
-    }
-    button:hover {
-        background-color: #555;
-    }
-    .links-list {
-        text-align: left;
-        max-width: 500px;
-        margin: 20px auto;
-    }
-    .links-list li {
-        margin: 8px 0;
-        cursor: pointer;
-        color: #00f;
-    }
-    .links-list li:hover {
-        text-decoration: underline;
-    }
+  body { font-family: Arial, sans-serif; margin:0; text-align:center; background:#f0f0f0; }
+  #splash { position:fixed; width:100%; height:100%; background:#000; color:#fff; display:flex; justify-content:center; align-items:center; font-size:2em; flex-direction:column; }
+  #main { display:none; padding:20px; }
+  canvas { border:1px solid #000; margin-top:10px; max-width:90%; }
+  button { padding:10px 20px; margin:10px; font-size:1em; cursor:pointer; }
 </style>
 </head>
 <body>
 
-<div id="loader">
-    <div>WELCOME</div>
-    <div>BLACK CITY</div>
+<div id="splash">
+  <div>WELCOME</div>
+  <div>OUTLINEO</div>
 </div>
 
-<div id="app">
-    <button onclick="showSection('education')">Education</button>
-    <button onclick="showSection('entertainment')">Entertainment</button>
-    <button onclick="showSection('adult')">18+</button>
+<div id="namePage" style="display:none;">
+  <h2>Enter Your Name</h2>
+  <input type="text" id="userName" placeholder="Your name" />
+  <button onclick="enterMain()">Submit</button>
+</div>
 
-    <div id="content"></div>
+<div id="main">
+  <h2>Upload Image to Convert to Outline</h2>
+  <input type="file" id="imgUpload" accept="image/*" />
+  <br>
+  <canvas id="canvas"></canvas>
+  <br>
+  <button id="downloadBtn">Download Outline</button>
 </div>
 
 <script>
-    // লোডিং স্ক্রিন ৩ সেকেন্ড দেখাবে
-    setTimeout(() => {
-        document.getElementById('loader').style.display = 'none';
-        document.getElementById('app').style.display = 'block';
-    }, 3000);
+  // Splash Screen
+  setTimeout(() => {
+    document.getElementById('splash').style.display = 'none';
+    document.getElementById('namePage').style.display = 'block';
+  }, 2000); // 2 seconds
 
-    const educationText = `
-        <p>এই তুই কি আমাকে বলদ মনে করস আমি কি বুঝি না তুই এখানে পড়তে আসছিস কিনা এই আমি জানি তুই এখানে কেন এসেছেছ যা পরেরগুলোতে যা</p>
-    `;
-
-    const entertainmentLinks = [
-        "https://youtube.com/shorts/XriOFrinZu0?si=DAHtJMzwANr5YmMV",
-        "https://youtube.com/shorts/aqKZdQ1WwFo?si=LCMiVpBDvASUBxHy",
-        "https://youtube.com/shorts/Vogw1zSQqDQ?si=RRHkAt_Od-g8Kguz",
-        "https://youtu.be/9M2OlnJ-xh4?si=KEpw2rzmjtYp5jkO",
-        "https://youtube.com/shorts/d858D6K_yQY?si=ABeHLf5OpfzdULcm",
-        "https://youtube.com/shorts/Xed9MNCmDks?si=NBQWSAZzMJhfRbM9",
-        "https://youtube.com/shorts/lBEQ6aTmy3I?si=mD9DfEYa9I7CoFrj",
-        "https://youtube.com/shorts/XriOFrinZu0?si=DAHtJMzwANr5YmMV",
-        "https://youtu.be/FbwWIbtJUrE?si=UrTNgv3lpIQzK90Y",
-        "https://youtu.be/6v4DfIJeKyM?si=nAbX9gF_E9cPzhlv5"
-    ];
-
-    const adultLinks = [
-        "https://youtu.be/tZlKWXZqDfA?si=MjySPsqw1h07PlvS",
-        "https://youtu.be/FoPyvLqh2GQ?si=c84XCXJGENV8svKT",
-        "https://youtu.be/16pZjvQfo20?si=10bfnvCibS_nqXKs",
-        "https://youtu.be/E4Bs5zM5YQk?si=9NPHSN4Hy05BjDqy",
-        "https://youtu.be/mB_zLzyKwbM?si=E2Sn_HJbsesEuwv5"
-    ];
-
-    function showSection(section) {
-        const contentDiv = document.getElementById('content');
-        contentDiv.innerHTML = '';
-        if(section === 'education') {
-            contentDiv.innerHTML = educationText;
-        } else if(section === 'entertainment') {
-            let list = '<ul class="links-list">';
-            entertainmentLinks.forEach((link, index) => {
-                list += `<li onclick="window.open('${link}', '_blank')">Video ${index+1}</li>`;
-            });
-            list += '</ul>';
-            contentDiv.innerHTML = list;
-        } else if(section === 'adult') {
-            let list = '<ul class="links-list">';
-            adultLinks.forEach((link, index) => {
-                list += `<li onclick="window.open('${link}', '_blank')">Video ${index+1}</li>`;
-            });
-            list += '</ul>';
-            contentDiv.innerHTML = list;
-        }
+  function enterMain() {
+    let name = document.getElementById('userName').value.trim();
+    if(name !== "") {
+      document.getElementById('namePage').style.display = 'none';
+      document.getElementById('main').style.display = 'block';
+    } else {
+      alert("Please enter your name");
     }
+  }
+
+  const uploadInput = document.getElementById('imgUpload');
+  const canvas = document.getElementById('canvas');
+  const ctx = canvas.getContext('2d');
+
+  uploadInput.addEventListener('change', (e) => {
+    const file = e.target.files[0];
+    if(file) {
+      const img = new Image();
+      img.onload = () => {
+        canvas.width = img.width;
+        canvas.height = img.height;
+        ctx.drawImage(img,0,0);
+        convertToOutline();
+      }
+      img.src = URL.createObjectURL(file);
+    }
+  });
+
+  function convertToOutline() {
+    const imageData = ctx.getImageData(0,0,canvas.width,canvas.height);
+    const data = imageData.data;
+
+    // Simple Edge Detection (grayscale + threshold)
+    for(let i=0; i<data.length; i+=4){
+      const avg = (data[i]+data[i+1]+data[i+2])/3;
+      const threshold = avg < 128 ? 0 : 255;
+      data[i] = data[i+1] = data[i+2] = threshold;
+      data[i+3] = 255; // alpha
+    }
+
+    ctx.putImageData(imageData,0,0);
+  }
+
+  // Download Button
+  const downloadBtn = document.getElementById('downloadBtn');
+  downloadBtn.addEventListener('click', () => {
+    const link = document.createElement('a');
+    link.download = 'outline.png';
+    link.href = canvas.toDataURL();
+    link.click();
+  });
 </script>
 
 </body>
